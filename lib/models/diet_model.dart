@@ -9,12 +9,12 @@ class FoodItemDetail {
 
   const FoodItemDetail({
     required this.name,
-    required this.calories,
-    required this.protein,
-    required this.carbs,
-    required this.fat,
-    required this.serving,
-    required this.cost,
+    this.calories = 0,
+    this.protein = 0,
+    this.carbs = 0,
+    this.fat = 0,
+    this.serving = '',
+    this.cost = 0,
   });
 }
 
@@ -36,15 +36,16 @@ class MealModel {
     required this.time,
     this.emoji = '🍽',
     this.foodItems = const [],
-    required this.calories,
-    required this.proteinGrams,
+    this.calories = 0,
+    this.proteinGrams = 0,
     this.carbsGrams = 0,
     this.fatGrams = 0,
     this.cost = 0,
   });
 
-  // Keep backward-compat items getter for HomeScreen
-  String get items => foodItems.map((f) => f.name).join(', ');
+  // Backward-compat getter for HomeScreen meal schedule
+  String get items =>
+      foodItems.isNotEmpty ? foodItems.map((f) => f.name).join(', ') : '';
 }
 
 class DietPlanModel {
@@ -58,11 +59,12 @@ class DietPlanModel {
 
   DietPlanModel({
     required this.id,
-    required this.targetCalories,
-    required this.targetProtein,
-    required this.targetCarbs,
-    required this.targetFat,
+    this.targetCalories = 2000,
+    this.targetProtein = 150,
+    this.targetCarbs = 200,
+    this.targetFat = 65,
     this.dailyBudget = 0,
     this.meals = const [],
   });
 }
+

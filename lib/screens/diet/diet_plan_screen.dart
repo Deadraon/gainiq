@@ -36,11 +36,12 @@ class _DietPlanScreenState extends State<DietPlanScreen> {
       );
     }
 
-    final totalCals = diet.meals.fold(0, (s, m) => s + m.calories);
-    final totalProtein = diet.meals.fold(0, (s, m) => s + m.proteinGrams);
-    final totalCarbs = diet.meals.fold(0, (s, m) => s + m.carbsGrams);
-    final totalFat = diet.meals.fold(0, (s, m) => s + m.fatGrams);
-    final totalCost = diet.meals.fold(0.0, (s, m) => s + m.cost);
+    final int totalCals = diet.meals.fold(0, (int s, m) => s + (m.calories));
+    final int totalProtein = diet.meals.fold(0, (int s, m) => s + (m.proteinGrams));
+    final int totalCarbs = diet.meals.fold(0, (int s, m) => s + (m.carbsGrams));
+    final int totalFat = diet.meals.fold(0, (int s, m) => s + (m.fatGrams));
+    final double totalCost = diet.meals.fold(0.0, (double s, m) => s + (m.cost));
+
 
     return Scaffold(
       backgroundColor: const Color(0xFF0D0D0D),
