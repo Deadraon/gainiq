@@ -55,6 +55,8 @@ class UserProvider with ChangeNotifier {
       if (_currentUser!.isProfileComplete) {
         _dietProvider?.generateForUser(_currentUser!);
         _workoutProvider?.generateForUser(_currentUser!);
+        await _workoutProvider?.loadCustomPlans(uid);
+        await _workoutProvider?.loadWorkoutLogs(uid);
       }
     } catch (e) {
       debugPrint('Error fetching user profile: $e');
@@ -85,6 +87,8 @@ class UserProvider with ChangeNotifier {
     _currentUser = updated;
     _dietProvider?.generateForUser(updated);
     _workoutProvider?.generateForUser(updated);
+    await _workoutProvider?.loadCustomPlans(uid);
+    await _workoutProvider?.loadWorkoutLogs(uid);
     notifyListeners();
   }
 }

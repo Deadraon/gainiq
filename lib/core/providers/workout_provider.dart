@@ -2,15 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/workout_model.dart';
+import '../../models/workout_log_model.dart';
 import '../../models/user_model.dart';
 import '../services/workout_generator.dart';
 
 class WorkoutProvider with ChangeNotifier {
   List<WorkoutPlanModel> _availablePlans = [];
   WorkoutPlanModel? _activePlan;
+  List<WorkoutLogModel> _logs = [];
 
   List<WorkoutPlanModel> get availablePlans => _availablePlans;
   WorkoutPlanModel? get activePlan => _activePlan;
+  List<WorkoutLogModel> get logs => _logs;
 
   /// Generate personalised workout plans from the user's profile
   void generateForUser(UserModel user) {
@@ -111,6 +114,43 @@ class WorkoutProvider with ChangeNotifier {
       }
     } catch (e) {
       debugPrint('Error loading custom plans: $e');
+    }
+  }
+
+  /// Load workout logs from Firestore
+  Future<void> loadWorkoutLogs(String uid) async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('workout_logs')
+          .orderBy('date', descending: true)
+          .get();
+      _logs = snapshot.docs.map((doc) => WorkoutLogModel.fromJson(doc.data())).toList();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error loading logs: $e');
+    }
+  }
+
+  /// Save a completed workout log
+  Future<void> saveWorkoutLog(WorkoutLogModel log) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    
+    // Add locally to update UI immediately
+    _logs.insert(0, log);
+    notifyListeners();
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('workout_logs')
+          .doc(log.id)
+          .set(log.toJson());
+    } catch (e) {
+      debugPrint('Error saving log: $e');
     }
   }
 }

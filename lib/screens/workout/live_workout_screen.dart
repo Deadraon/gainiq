@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:provider/provider.dart';
 import '../../core/providers/workout_provider.dart';
+import '../../models/workout_log_model.dart';
 import '../../models/workout_model.dart';
 
 class LiveWorkoutScreen extends StatefulWidget {
@@ -586,8 +587,26 @@ class _LiveWorkoutScreenState extends State<LiveWorkoutScreen>
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.pop(context);
-                      Navigator.pop(context);
+                      final provider = context.read<WorkoutProvider>();
+                      final plan = provider.activePlan;
+                      if (plan != null) {
+                        int totalSets = 0;
+                        for (var ex in plan.exercises) {
+                          totalSets += ex.completedSets;
+                        }
+                        
+                        final log = WorkoutLogModel(
+                          id: DateTime.now().millisecondsSinceEpoch.toString(),
+                          planName: plan.title,
+                          totalVolume: totalSets, 
+                          durationSeconds: _seconds,
+                          date: DateTime.now(),
+                        );
+                        provider.saveWorkoutLog(log);
+                      }
+                      
+                      Navigator.pop(context); // close modal
+                      Navigator.pop(context); // close screen
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.redAccent,
