@@ -6,6 +6,7 @@ class FoodItemDetail {
   final double fat;
   final String serving;
   final double cost;
+  final List<FoodItemDetail> alternatives; // AI-suggested swaps
 
   const FoodItemDetail({
     required this.name,
@@ -15,6 +16,7 @@ class FoodItemDetail {
     this.fat = 0,
     this.serving = '',
     this.cost = 0,
+    this.alternatives = const [],
   });
 }
 
@@ -67,4 +69,3 @@ class DietPlanModel {
     this.meals = const [],
   });
 }
-

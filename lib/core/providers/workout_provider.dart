@@ -5,26 +5,55 @@ import '../../models/workout_model.dart';
 import '../../models/workout_log_model.dart';
 import '../../models/user_model.dart';
 import '../services/workout_generator.dart';
+import '../services/gemini_workout_service.dart';
 
 class WorkoutProvider with ChangeNotifier {
   List<WorkoutPlanModel> _availablePlans = [];
   WorkoutPlanModel? _activePlan;
   List<WorkoutLogModel> _logs = [];
+  bool _isGenerating = false;
+  bool _isAIGenerated = false;
+  String _statusMessage = '';
 
   List<WorkoutPlanModel> get availablePlans => _availablePlans;
   WorkoutPlanModel? get activePlan => _activePlan;
   List<WorkoutLogModel> get logs => _logs;
+  bool get isGenerating => _isGenerating;
+  bool get isAIGenerated => _isAIGenerated;
+  String get statusMessage => _statusMessage;
 
-  /// Generate personalised workout plans from the user's profile
-  void generateForUser(UserModel user) {
-    _availablePlans = WorkoutGenerator.generate(user);
+  /// Generate personalised workout plans using Gemini AI
+  Future<void> generateForUser(UserModel user) async {
+    _isGenerating = true;
+    _isAIGenerated = false;
+    _statusMessage = '💪 AI is building your workout plan...';
+    notifyListeners();
+
+    try {
+      _availablePlans = await GeminiWorkoutService.generateWorkoutPlans(user);
+      _isAIGenerated = true;
+    } catch (_) {
+      _availablePlans = WorkoutGenerator.generate(user);
+      _isAIGenerated = false;
+    }
+
     _activePlan = _availablePlans.isNotEmpty
         ? _availablePlans.firstWhere((p) => p.isActive, orElse: () => _availablePlans.first)
         : null;
+    _isGenerating = false;
+    _statusMessage = '';
     notifyListeners();
   }
 
-  /// Fallback mock data
+  /// Regenerate with fresh AI plan
+  Future<void> regenerate(UserModel user) async {
+    _availablePlans = [];
+    _activePlan = null;
+    notifyListeners();
+    await generateForUser(user);
+  }
+
+  /// Fallback mock data (uses local generator, no async)
   void loadMockPlans() {
     final mockUser = UserModel(
       id: 'mock',
@@ -40,7 +69,11 @@ class WorkoutProvider with ChangeNotifier {
       dietPreference: 'Non-vegetarian',
       monthlyBudget: 3000,
     );
-    generateForUser(mockUser);
+    _availablePlans = WorkoutGenerator.generate(mockUser);
+    _activePlan = _availablePlans.isNotEmpty
+        ? _availablePlans.firstWhere((p) => p.isActive, orElse: () => _availablePlans.first)
+        : null;
+    notifyListeners();
   }
 
   void setActivePlan(String planId) {

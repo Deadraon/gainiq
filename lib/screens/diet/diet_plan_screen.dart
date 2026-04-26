@@ -556,58 +556,172 @@ class _ExpandedMealContent extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────
-// FOOD ITEM ROW
+// FOOD ITEM ROW (with alternatives)
 // ─────────────────────────────────────────────────────────────
-class _FoodItemRow extends StatelessWidget {
+class _FoodItemRow extends StatefulWidget {
   final FoodItemDetail food;
   final Color accentColor;
   const _FoodItemRow({required this.food, required this.accentColor});
 
   @override
+  State<_FoodItemRow> createState() => _FoodItemRowState();
+}
+
+class _FoodItemRowState extends State<_FoodItemRow> {
+  bool _showAlternatives = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final food = widget.food;
+    final color = widget.accentColor;
+    final hasAlts = food.alternatives.isNotEmpty;
+
+    return Column(
+      children: [
+        // Main food row
+        Container(
+          margin: EdgeInsets.only(bottom: hasAlts ? 2 : 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1A1A1A),
+            borderRadius: BorderRadius.only(
+              topLeft: const Radius.circular(12),
+              topRight: const Radius.circular(12),
+              bottomLeft: Radius.circular(_showAlternatives ? 0 : 12),
+              bottomRight: Radius.circular(_showAlternatives ? 0 : 12),
+            ),
+            border: Border.all(
+              color: _showAlternatives ? color.withOpacity(0.3) : Colors.white.withOpacity(0.04),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 8, height: 8,
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(food.name,
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
+                    const SizedBox(height: 2),
+                    Text(food.serving,
+                        style: TextStyle(color: Colors.white.withOpacity(0.35), fontSize: 11)),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('${food.calories} kcal',
+                      style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12, fontWeight: FontWeight.w600)),
+                  Row(
+                    children: [
+                      Text('${food.protein.toInt()}g P',
+                          style: const TextStyle(color: Colors.blueAccent, fontSize: 10)),
+                      const SizedBox(width: 6),
+                      Text('₹${food.cost.toInt()}',
+                          style: const TextStyle(color: Color(0xFFE5FF00), fontSize: 10)),
+                    ],
+                  ),
+                ],
+              ),
+              if (hasAlts) ...[
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () => setState(() => _showAlternatives = !_showAlternatives),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.swap_horiz_rounded, color: color, size: 13),
+                        const SizedBox(width: 3),
+                        Text('Swap', style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+
+        // Alternatives panel
+        if (hasAlts && _showAlternatives)
+          Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.05),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(12),
+                bottomRight: Radius.circular(12),
+              ),
+              border: Border.all(color: color.withOpacity(0.2)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.swap_horiz_rounded, color: color, size: 12),
+                    const SizedBox(width: 5),
+                    Text('Alternatives', style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ...food.alternatives.map((alt) => _AltRow(alt: alt, accentColor: color)),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _AltRow extends StatelessWidget {
+  final FoodItemDetail alt;
+  final Color accentColor;
+  const _AltRow({required this.alt, required this.accentColor});
+
+  @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.04)),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
         children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(color: accentColor, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 10),
+          Icon(Icons.radio_button_unchecked, color: accentColor.withOpacity(0.5), size: 12),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(food.name,
-                    style: const TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
-                const SizedBox(height: 2),
-                Text(food.serving,
-                    style: TextStyle(color: Colors.white.withOpacity(0.35), fontSize: 11)),
+                Text(alt.name, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500)),
+                Text(alt.serving, style: TextStyle(color: Colors.white.withOpacity(0.35), fontSize: 10)),
               ],
             ),
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text('${food.calories} kcal',
-                  style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12, fontWeight: FontWeight.w600)),
-              Row(
-                children: [
-                  Text('${food.protein.toInt()}g P',
-                      style: const TextStyle(color: Colors.blueAccent, fontSize: 10)),
-                  const SizedBox(width: 6),
-                  Text('₹${food.cost.toInt()}',
-                      style: const TextStyle(color: Color(0xFFE5FF00), fontSize: 10)),
-                ],
-              ),
+              Text('${alt.calories} kcal', style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600)),
+              Row(children: [
+                Text('${alt.protein.toInt()}g P', style: const TextStyle(color: Colors.blueAccent, fontSize: 9)),
+                const SizedBox(width: 4),
+                Text('₹${alt.cost.toInt()}', style: const TextStyle(color: Color(0xFFE5FF00), fontSize: 9)),
+              ]),
             ],
           ),
         ],
@@ -615,6 +729,7 @@ class _FoodItemRow extends StatelessWidget {
     );
   }
 }
+
 
 // ─────────────────────────────────────────────────────────────
 // TIPS CARD

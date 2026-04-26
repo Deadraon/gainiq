@@ -33,14 +33,13 @@ class GeminiDietService {
       final prompt = _buildPrompt(user);
 
       final response = await model.generateContent([Content.text(prompt)])
-          .timeout(const Duration(seconds: 20));
+          .timeout(const Duration(seconds: 30));
 
       final text = response.text ?? '';
       if (text.isEmpty) throw Exception('Empty response from Gemini');
 
       return _parseDietPlan(text, user);
     } catch (e) {
-      // Fallback to local rule-based generator
       return DietGenerator.generate(user);
     }
   }
@@ -60,43 +59,23 @@ class GeminiDietService {
     final targetFat = ((targetCals * ratios['fat']!) / 9).round();
 
     return '''
-You are an expert Indian nutritionist and dietitian. Generate a highly personalized, realistic Indian daily diet plan for this person.
+You are an expert Indian nutritionist. Generate a personalized Indian daily diet plan.
 
 USER PROFILE:
-- Name: ${user.name}
-- Age: ${user.age} years
-- Gender: ${user.gender}
-- Weight: ${user.weight} kg
-- Height: ${user.height} cm
-- Body Type: ${user.bodyType}
-- Primary Goal: ${user.primaryGoal}
-- Experience Level: ${user.experienceLevel}
-- Workout Location: ${user.workoutLocation}
-- Workout Timing: ${user.workoutTiming}
-- Diet Preference: ${user.dietPreference}
-- Monthly Food Budget: ₹${user.monthlyBudget.toInt()} (Daily: ₹$dailyBudget)
-- Allergies/Restrictions: ${user.allergies.isEmpty ? 'None' : user.allergies}
+- Age: ${user.age}y, Gender: ${user.gender}, Weight: ${user.weight}kg, Height: ${user.height}cm
+- Goal: ${user.primaryGoal}, Body Type: ${user.bodyType}
+- Diet: ${user.dietPreference}, Budget: ₹$dailyBudget/day
+- Workout: ${user.workoutTiming}, Allergies: ${user.allergies.isEmpty ? 'None' : user.allergies}
 
-CALCULATED DAILY TARGETS:
-- Calories: $targetCals kcal
-- Protein: ${targetProtein}g
-- Carbs: ${targetCarbs}g
-- Fat: ${targetFat}g
-- Daily budget: ₹$dailyBudget
+TARGETS: ${targetCals}kcal | Protein:${targetProtein}g | Carbs:${targetCarbs}g | Fat:${targetFat}g
 
-STRICT RULES:
-1. Diet preference "${user.dietPreference}" MUST be strictly followed:
-   - "Vegetarian": NO eggs, NO meat, NO fish. Only veg items.
-   - "Eggetarian": veg + eggs allowed. NO meat or fish.
-   - "Non-Vegetarian": all foods allowed.
-2. ALL food items must be common, affordable Indian foods available in local markets.
-3. Costs must be realistic Indian market prices in INR.
-4. Respect the daily budget of ₹$dailyBudget strictly.
-5. Avoid any allergens: ${user.allergies.isEmpty ? 'none' : user.allergies}.
-6. Adjust portions and food choices to match the goal "${user.primaryGoal}".
-7. Include breakfast, lunch, snack and dinner.
+RULES:
+- "${user.dietPreference}": Vegetarian=no eggs/meat/fish. Eggetarian=eggs OK no meat. Non-veg=all OK.
+- Only common affordable Indian foods. Real INR prices. Stay within ₹$dailyBudget budget.
+- For EACH food item provide 2 alternatives (similar macros, same diet type, different food).
+- Alternatives must follow the same diet rules strictly.
 
-Return ONLY a valid JSON object (no markdown, no explanation) in this EXACT format:
+Return ONLY valid JSON (no markdown):
 {
   "targetCalories": $targetCals,
   "targetProtein": $targetProtein,
@@ -122,7 +101,27 @@ Return ONLY a valid JSON object (no markdown, no explanation) in this EXACT form
           "carbs": 38,
           "fat": 6,
           "serving": "3 chillas with green chutney",
-          "cost": 18
+          "cost": 18,
+          "alternatives": [
+            {
+              "name": "Besan Chilla (3)",
+              "calories": 310,
+              "protein": 18,
+              "carbs": 40,
+              "fat": 7,
+              "serving": "3 chillas",
+              "cost": 15
+            },
+            {
+              "name": "Oats Upma (1 bowl)",
+              "calories": 290,
+              "protein": 10,
+              "carbs": 45,
+              "fat": 5,
+              "serving": "1 bowl with veggies",
+              "cost": 20
+            }
+          ]
         }
       ]
     },
@@ -168,7 +167,6 @@ Return ONLY a valid JSON object (no markdown, no explanation) in this EXACT form
   }
 
   static DietPlanModel _parseDietPlan(String jsonText, UserModel user) {
-    // Strip any accidental markdown code fences
     var clean = jsonText.trim();
     if (clean.startsWith('```')) {
       clean = clean.replaceAll(RegExp(r'```[a-z]*\n?'), '').trim();
@@ -178,6 +176,19 @@ Return ONLY a valid JSON object (no markdown, no explanation) in this EXACT form
 
     final meals = (data['meals'] as List).map((m) {
       final items = (m['foodItems'] as List).map((f) {
+        // Parse alternatives
+        final altList = (f['alternatives'] as List? ?? []).map((a) {
+          return FoodItemDetail(
+            name: a['name'] ?? '',
+            calories: _toInt(a['calories']),
+            protein: _toDouble(a['protein']),
+            carbs: _toDouble(a['carbs']),
+            fat: _toDouble(a['fat']),
+            serving: a['serving'] ?? '',
+            cost: _toDouble(a['cost']),
+          );
+        }).toList();
+
         return FoodItemDetail(
           name: f['name'] ?? '',
           calories: _toInt(f['calories']),
@@ -186,6 +197,7 @@ Return ONLY a valid JSON object (no markdown, no explanation) in this EXACT form
           fat: _toDouble(f['fat']),
           serving: f['serving'] ?? '',
           cost: _toDouble(f['cost']),
+          alternatives: altList,
         );
       }).toList();
 
