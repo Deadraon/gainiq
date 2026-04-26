@@ -10,11 +10,11 @@ class GeminiDietService {
 
   static GenerativeModel _getModel() {
     _model ??= GenerativeModel(
-      model: 'gemini-1.5-flash',
+      model: 'gemini-1.5-flash-latest',
       apiKey: dotenv.env['GEMINI_API_KEY'] ?? '',
       generationConfig: GenerationConfig(
-        temperature: 0.7,
-        responseMimeType: 'application/json',
+        temperature: 0.9,
+        maxOutputTokens: 2048,
       ),
     );
     return _model!;
@@ -22,25 +22,49 @@ class GeminiDietService {
 
   /// Generate a full day diet plan via Gemini AI.
   /// Falls back to local generator if API fails.
-  static Future<DietPlanModel> generateDietPlan(UserModel user) async {
+  static Future<DietPlanModel> generateDietPlan(UserModel user, {void Function(String)? onProgress}) async {
     try {
       final apiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
       if (apiKey.isEmpty || apiKey == 'YOUR_GEMINI_API_KEY_HERE') {
         throw Exception('No API key configured');
       }
 
+      _model = null; // Force fresh model creation
       final model = _getModel();
       final prompt = _buildPrompt(user);
-
-      final response = await model.generateContent([Content.text(prompt)])
-          .timeout(const Duration(seconds: 30));
-
-      final text = response.text ?? '';
+      
+      final stream = model.generateContentStream([Content.text(prompt)]);
+      final StringBuffer buffer = StringBuffer();
+      
+      // Use await for to consume the stream chunks as they arrive.
+      // This prevents long-idle connection drops.
+      await for (final chunk in stream.timeout(const Duration(seconds: 180))) {
+        buffer.write(chunk.text);
+        
+        // Report progress back to UI if requested
+        if (onProgress != null) {
+          final content = buffer.toString().toLowerCase();
+          if (content.contains('"id": "dinner"')) {
+            onProgress('Finishing up Dinner...');
+          } else if (content.contains('"id": "snack"')) {
+            onProgress('Crafting your Evening Snack...');
+          } else if (content.contains('"id": "lunch"')) {
+            onProgress('Preparing Lunch options...');
+          } else if (content.contains('"id": "breakfast"')) {
+            onProgress('Generating Breakfast...');
+          } else {
+            onProgress('Analyzing your profile & goals...');
+          }
+        }
+      }
+      
+      final text = buffer.toString();
       if (text.isEmpty) throw Exception('Empty response from Gemini');
 
       return _parseDietPlan(text, user);
     } catch (e) {
-      return DietGenerator.generate(user);
+      print('GEMINI SERVICE ERROR: $e');
+      rethrow;
     }
   }
 
@@ -58,6 +82,14 @@ class GeminiDietService {
     final targetCarbs = ((targetCals * ratios['carbs']!) / 4).round();
     final targetFat = ((targetCals * ratios['fat']!) / 9).round();
 
+    final dietPref = user.dietPreference.toLowerCase();
+    String dietFocus = "Vegetarian=Strictly NO eggs, meat, or fish. Plant-based and dairy only.";
+    if (dietPref.contains('non')) {
+      dietFocus = "Non-veg=MUST INCLUDE chicken, fish, or mutton as main protein sources in lunch and dinner.";
+    } else if (dietPref.contains('egg')) {
+      dietFocus = "Eggetarian=MUST INCLUDE eggs in at least two meals. Strictly NO meat or fish.";
+    }
+
     return '''
 You are an expert Indian nutritionist. Generate a personalized Indian daily diet plan.
 
@@ -70,10 +102,13 @@ USER PROFILE:
 TARGETS: ${targetCals}kcal | Protein:${targetProtein}g | Carbs:${targetCarbs}g | Fat:${targetFat}g
 
 RULES:
-- "${user.dietPreference}": Vegetarian=no eggs/meat/fish. Eggetarian=eggs OK no meat. Non-veg=all OK.
+- DIET REQUIREMENT: $dietFocus
 - Only common affordable Indian foods. Real INR prices. Stay within ₹$dailyBudget budget.
-- For EACH food item provide 2 alternatives (similar macros, same diet type, different food).
-- Alternatives must follow the same diet rules strictly.
+- Provide a clear, actionable diet plan.
+- NO alternatives needed.
+- VARIETY IS CRITICAL: The user is bored of basic suggestions. Do NOT suggest simple sandwiches or basic dal/roti every time.
+- INCLUDE SPECIFIC FOODS: Actively include healthy, modern Indian options like Oats, Muesli, Quinoa, Paneer, Sprouts, and diverse Chicken/Fish preparations.
+- RANDOMIZE: Every time you are called, suggest a DIFFERENT set of meals. Surprise the user with variety!
 
 Return ONLY valid JSON (no markdown):
 {
@@ -101,27 +136,7 @@ Return ONLY valid JSON (no markdown):
           "carbs": 38,
           "fat": 6,
           "serving": "3 chillas with green chutney",
-          "cost": 18,
-          "alternatives": [
-            {
-              "name": "Besan Chilla (3)",
-              "calories": 310,
-              "protein": 18,
-              "carbs": 40,
-              "fat": 7,
-              "serving": "3 chillas",
-              "cost": 15
-            },
-            {
-              "name": "Oats Upma (1 bowl)",
-              "calories": 290,
-              "protein": 10,
-              "carbs": 45,
-              "fat": 5,
-              "serving": "1 bowl with veggies",
-              "cost": 20
-            }
-          ]
+          "cost": 18
         }
       ]
     },
@@ -167,11 +182,13 @@ Return ONLY valid JSON (no markdown):
   }
 
   static DietPlanModel _parseDietPlan(String jsonText, UserModel user) {
-    var clean = jsonText.trim();
-    if (clean.startsWith('```')) {
-      clean = clean.replaceAll(RegExp(r'```[a-z]*\n?'), '').trim();
+    final startIndex = jsonText.indexOf('{');
+    final endIndex = jsonText.lastIndexOf('}');
+    if (startIndex == -1 || endIndex == -1) {
+      throw Exception('Invalid JSON response: No object found.');
     }
-
+    
+    final clean = jsonText.substring(startIndex, endIndex + 1);
     final Map<String, dynamic> data = jsonDecode(clean);
 
     final meals = (data['meals'] as List).map((m) {

@@ -30,7 +30,15 @@ class WorkoutProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      _availablePlans = await GeminiWorkoutService.generateWorkoutPlans(user);
+      _availablePlans = await GeminiWorkoutService.generateWorkoutPlans(
+        user,
+        onProgress: (msg) {
+          if (_statusMessage != msg) {
+            _statusMessage = msg;
+            notifyListeners();
+          }
+        },
+      );
       _isAIGenerated = true;
     } catch (_) {
       _availablePlans = WorkoutGenerator.generate(user);

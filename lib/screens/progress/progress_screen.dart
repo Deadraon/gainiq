@@ -21,6 +21,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
   bool _isAnalyzing = false;
   BodyAnalysisResult? _analysisResult;
   String? _errorMessage;
+  String _statusMessage = 'Analysing...';
 
   Future<void> _pickAndAnalyze(ImageSource source) async {
     final user = context.read<UserProvider>().currentUser;
@@ -43,11 +44,19 @@ class _ProgressScreenState extends State<ProgressScreen> {
         _isAnalyzing = true;
         _analysisResult = null;
         _errorMessage = null;
+        _statusMessage = 'Connecting to Gemini AI...';
       });
 
       final result = await GeminiProgressService.analyzeProgress(
         imageFile: _selectedImage!,
         user: user,
+        onProgress: (status) {
+          if (mounted) {
+            setState(() {
+              _statusMessage = status;
+            });
+          }
+        },
       );
 
       setState(() {
@@ -207,16 +216,16 @@ class _ProgressScreenState extends State<ProgressScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
               child: _isAnalyzing
-                  ? const Row(
+                  ? Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        SizedBox(
+                        const SizedBox(
                           width: 16,
                           height: 16,
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
                         ),
-                        SizedBox(width: 10),
-                        Text('Gemini AI Analysing...', style: TextStyle(fontWeight: FontWeight.bold)),
+                        const SizedBox(width: 10),
+                        Text(_statusMessage, style: const TextStyle(fontWeight: FontWeight.bold)),
                       ],
                     )
                   : const Row(

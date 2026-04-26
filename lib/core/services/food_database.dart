@@ -39,6 +39,8 @@ const List<FoodItem> indianFoodDB = [
   //  VEG BREAKFAST
   // ══════════════════════════════════════════════
   FoodItem(name: 'Oats with Milk & Banana', calories: 320, protein: 13, carbs: 52, fat: 6, costPerServing: 22, servingSize: '60g oats + 200ml milk + 1 banana', tags: ['veg', 'breakfast'], emoji: '🥣'),
+  FoodItem(name: 'Muesli with Cold Milk & Honey', calories: 350, protein: 12, carbs: 58, fat: 8, costPerServing: 35, servingSize: '50g muesli + 200ml milk', tags: ['veg', 'breakfast'], emoji: '🥣'),
+  FoodItem(name: 'Quinoa Veggie Upma', calories: 280, protein: 11, carbs: 45, fat: 7, costPerServing: 40, servingSize: '1 bowl', tags: ['veg', 'breakfast', 'lunch'], emoji: '🥗'),
   FoodItem(name: 'Poha with Peanuts', calories: 270, protein: 8, carbs: 46, fat: 6, costPerServing: 12, servingSize: '1 cup', tags: ['veg', 'breakfast'], emoji: '🍚'),
   FoodItem(name: 'Upma with Veggies', calories: 240, protein: 7, carbs: 42, fat: 6, costPerServing: 14, servingSize: '1 cup', tags: ['veg', 'breakfast'], emoji: '🫕'),
   FoodItem(name: 'Idli (3) + Sambar + Chutney', calories: 290, protein: 10, carbs: 54, fat: 3, costPerServing: 18, servingSize: '3 idlis', tags: ['veg', 'breakfast', 'lunch'], emoji: '🍚'),
@@ -67,6 +69,7 @@ const List<FoodItem> indianFoodDB = [
   // ══════════════════════════════════════════════
   FoodItem(name: 'Chicken Keema Paratha (2)', calories: 440, protein: 28, carbs: 44, fat: 16, costPerServing: 55, servingSize: '2 parathas', tags: ['nonveg', 'breakfast', 'lunch'], emoji: '🫓'),
   FoodItem(name: 'Tuna Sandwich (Whole Wheat)', calories: 320, protein: 26, carbs: 34, fat: 8, costPerServing: 50, servingSize: '2 slices + 1 can tuna', tags: ['nonveg', 'breakfast', 'lunch'], emoji: '🥪'),
+  FoodItem(name: 'Smoked Salmon & Egg White Wrap', calories: 340, protein: 32, carbs: 24, fat: 12, costPerServing: 120, servingSize: '1 whole wheat wrap', tags: ['nonveg', 'breakfast'], emoji: '🌯'),
 
   // ══════════════════════════════════════════════
   //  UNIVERSAL BREAKFAST (all diets)
@@ -106,6 +109,7 @@ const List<FoodItem> indianFoodDB = [
   FoodItem(name: 'Chicken Breast + Rice + Salad', calories: 420, protein: 45, carbs: 48, fat: 6, costPerServing: 65, servingSize: '200g chicken + 1 cup rice', tags: ['nonveg', 'lunch', 'dinner'], emoji: '🍗'),
   FoodItem(name: 'Chicken Curry + Roti (3)', calories: 480, protein: 38, carbs: 48, fat: 14, costPerServing: 70, servingSize: '200g chicken + 3 rotis', tags: ['nonveg', 'lunch', 'dinner'], emoji: '🍛'),
   FoodItem(name: 'Grilled Fish + Rice + Dal', calories: 420, protein: 40, carbs: 46, fat: 8, costPerServing: 65, servingSize: '200g fish + 1 cup rice', tags: ['nonveg', 'lunch', 'dinner'], emoji: '🐟'),
+  FoodItem(name: 'Fish Curry + Steamed Rice', calories: 450, protein: 38, carbs: 52, fat: 10, costPerServing: 75, servingSize: '200g fish + 1.5 cup rice', tags: ['nonveg', 'lunch', 'dinner'], emoji: '🍛'),
   FoodItem(name: 'Mutton Curry + Rice', calories: 520, protein: 36, carbs: 44, fat: 20, costPerServing: 90, servingSize: '150g mutton + 1 cup rice', tags: ['nonveg', 'lunch', 'dinner'], emoji: '🍖'),
   FoodItem(name: 'Tuna Salad Bowl', calories: 240, protein: 32, carbs: 10, fat: 6, costPerServing: 60, servingSize: '1 can tuna + veggies', tags: ['nonveg', 'lunch'], emoji: '🥗'),
   FoodItem(name: 'Grilled Chicken + Salad', calories: 320, protein: 42, carbs: 12, fat: 10, costPerServing: 70, servingSize: '200g chicken + salad', tags: ['nonveg', 'lunch', 'dinner'], emoji: '🥗'),

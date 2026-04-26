@@ -28,14 +28,29 @@ class DietProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      _currentDietPlan = await GeminiDietService.generateDietPlan(user);
+      _currentDietPlan = await GeminiDietService.generateDietPlan(
+        user,
+        onProgress: (msg) {
+          if (_statusMessage != msg) {
+            _statusMessage = msg;
+            notifyListeners();
+          }
+        },
+      );
       _isAIGenerated = true;
       _loadState = DietLoadState.loaded;
       _statusMessage = '';
-    } catch (_) {
+    } catch (e) {
+      print('GEMINI ERROR: $e');
+      _statusMessage = '⚠️ AI Error: ${e.toString().split('\n').first}';
+      notifyListeners();
+      
+      // Wait a moment so user can see the error
+      await Future.delayed(const Duration(seconds: 3));
+      
       // Fallback to local
       _loadState = DietLoadState.loadingLocal;
-      _statusMessage = 'Using smart local plan...';
+      _statusMessage = 'Switching to variety-enhanced local plan...';
       notifyListeners();
       _currentDietPlan = DietGenerator.generate(user);
       _isAIGenerated = false;

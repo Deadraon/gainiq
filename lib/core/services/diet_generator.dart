@@ -235,6 +235,7 @@ class DietGenerator {
         mealTag: id,
         allowedFoods: allowed,
         goal: user.primaryGoal,
+        dietPref: user.dietPreference.toLowerCase(),
       );
     }).toList();
   }
@@ -250,6 +251,7 @@ class DietGenerator {
     required String mealTag,
     required List<FoodItem> allowedFoods,
     required String goal,
+    required String dietPref,
   }) {
     // Foods that belong to this meal slot
     var candidates = allowedFoods
@@ -270,11 +272,25 @@ class DietGenerator {
         scoreA = (a.protein / (a.calories + 1)) * (100 / (a.costPerServing + 1));
         scoreB = (b.protein / (b.calories + 1)) * (100 / (b.costPerServing + 1));
       } else {
-        // For bulking/maintenance: maximise protein/rupee
-        scoreA = a.protein / (a.costPerServing + 1);
-        scoreB = b.protein / (b.costPerServing + 1);
+        if (goal == 'bulking') {
+          scoreA = a.protein / (a.costPerServing + 1) + (a.calories / 100);
+          scoreB = b.protein / (b.costPerServing + 1) + (b.calories / 100);
+        } else {
+          scoreA = a.protein / (a.calories + 1);
+          scoreB = b.protein / (b.calories + 1);
+        }
       }
-      return scoreB.compareTo(scoreA);
+      
+      // Boost score for non-veg/egg if user prefers it and meal is lunch/dinner
+      if (dietPref.contains('non') && (id == 'lunch' || id == 'dinner')) {
+        if (a.tags.contains('nonveg')) scoreA *= 10;
+        if (b.tags.contains('nonveg')) scoreB *= 10;
+      } else if (dietPref.contains('egg') && (id == 'lunch' || id == 'dinner' || id == 'breakfast')) {
+        if (a.tags.contains('egg')) scoreA *= 10;
+        if (b.tags.contains('egg')) scoreB *= 10;
+      }
+
+      return scoreB.compareTo(scoreA); // Descending
     });
 
     final selected = <FoodItem>[];

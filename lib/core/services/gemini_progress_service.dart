@@ -27,26 +27,31 @@ class BodyAnalysisResult {
 }
 
 class GeminiProgressService {
+  static GenerativeModel? _model;
+
+  static GenerativeModel _getModel() {
+    _model ??= GenerativeModel(
+      model: 'gemini-1.5-flash-latest',
+      apiKey: dotenv.env['GEMINI_API_KEY'] ?? '',
+      generationConfig: GenerationConfig(
+        temperature: 0.4,
+        maxOutputTokens: 1024,
+      ),
+    );
+    return _model!;
+  }
+
   static Future<BodyAnalysisResult> analyzeProgress({
     required File imageFile,
     required UserModel user,
+    void Function(String)? onProgress,
   }) async {
     final apiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
     if (apiKey.isEmpty || apiKey == 'YOUR_GEMINI_API_KEY_HERE') {
       throw Exception('No API key configured');
     }
 
-    final model = GenerativeModel(
-      model: 'gemini-1.5-flash',
-      apiKey: apiKey,
-      generationConfig: GenerationConfig(
-        temperature: 0.4,
-        responseMimeType: 'application/json',
-      ),
-    );
-
     final imageBytes = await imageFile.readAsBytes();
-    final imagePart = DataPart('image/jpeg', imageBytes);
 
     final prompt = '''
 You are an expert fitness coach and body composition analyst. Analyze this physique/progress photo.
@@ -79,23 +84,49 @@ Return ONLY valid JSON (no markdown):
 }
 ''';
 
-    final response = await model.generateContent([
-      Content.multi([TextPart(prompt), imagePart])
-    ]).timeout(const Duration(seconds: 30));
+    _model = null; // Force fresh model creation
+    final model = _getModel();
+    
+    final content = [
+      Content.multi([
+        TextPart(prompt),
+        DataPart('image/jpeg', imageBytes),
+      ])
+    ];
 
-    final text = response.text ?? '';
+    final stream = model.generateContentStream(content);
+    final StringBuffer buffer = StringBuffer();
+    
+    await for (final chunk in stream.timeout(const Duration(seconds: 180))) {
+      buffer.write(chunk.text);
+      if (onProgress != null) {
+        final content = buffer.toString().toLowerCase();
+        if (content.contains('"improvements"')) {
+          onProgress('Generating actionable improvements...');
+        } else if (content.contains('"strengths"')) {
+          onProgress('Identifying key strengths...');
+        } else if (content.contains('"estimatedbodyfat"')) {
+          onProgress('Estimating composition details...');
+        } else {
+          onProgress('Analyzing physique...');
+        }
+      }
+    }
+
+    final text = buffer.toString();
     if (text.isEmpty) throw Exception('Empty response from Gemini');
 
     return _parse(text);
   }
 
   static BodyAnalysisResult _parse(String jsonText) {
-    var clean = jsonText.trim();
-    if (clean.startsWith('```')) {
-      clean = clean.replaceAll(RegExp(r'```[a-z]*\n?'), '').trim();
-    }
-
     try {
+      final startIndex = jsonText.indexOf('{');
+      final endIndex = jsonText.lastIndexOf('}');
+      if (startIndex == -1 || endIndex == -1) {
+        throw Exception('Invalid JSON response: No object found.');
+      }
+      final clean = jsonText.substring(startIndex, endIndex + 1);
       final data = jsonDecode(clean) as Map<String, dynamic>;
       return BodyAnalysisResult(
         overallFeedback: data['overallFeedback'] ?? 'Great effort — keep going!',

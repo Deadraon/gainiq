@@ -10,34 +10,52 @@ class GeminiWorkoutService {
 
   static GenerativeModel _getModel() {
     _model ??= GenerativeModel(
-      model: 'gemini-1.5-flash',
+      model: 'gemini-1.5-flash-latest',
       apiKey: dotenv.env['GEMINI_API_KEY'] ?? '',
       generationConfig: GenerationConfig(
-        temperature: 0.7,
-        responseMimeType: 'application/json',
+        temperature: 0.8,
+        maxOutputTokens: 2048,
       ),
     );
     return _model!;
   }
 
-  static Future<List<WorkoutPlanModel>> generateWorkoutPlans(UserModel user) async {
+  static Future<List<WorkoutPlanModel>> generateWorkoutPlans(UserModel user, {void Function(String)? onProgress}) async {
     try {
       final apiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
       if (apiKey.isEmpty || apiKey == 'YOUR_GEMINI_API_KEY_HERE') {
         throw Exception('No API key configured');
       }
 
-      final model = _getModel();
       final prompt = _buildPrompt(user);
+      _model = null; // Force fresh model creation
+      final model = _getModel();
+      
+      final stream = model.generateContentStream([Content.text(prompt)]);
+      final StringBuffer buffer = StringBuffer();
+      
+      await for (final chunk in stream.timeout(const Duration(seconds: 180))) {
+        buffer.write(chunk.text);
+        if (onProgress != null) {
+          final content = buffer.toString().toLowerCase();
+          if (content.contains('"id": "plan_3"')) {
+            onProgress('Finishing third plan...');
+          } else if (content.contains('"id": "plan_2"')) {
+            onProgress('Crafting second split...');
+          } else if (content.contains('"id": "plan_1"')) {
+            onProgress('Designing first routine...');
+          } else {
+            onProgress('Analyzing fitness profile...');
+          }
+        }
+      }
 
-      final response = await model.generateContent([Content.text(prompt)])
-          .timeout(const Duration(seconds: 30));
-
-      final text = response.text ?? '';
+      final text = buffer.toString();
       if (text.isEmpty) throw Exception('Empty response');
 
       return _parsePlans(text);
     } catch (e) {
+      print('GEMINI WORKOUT SERVICE ERROR: $e');
       return WorkoutGenerator.generate(user);
     }
   }
@@ -106,10 +124,12 @@ Return ONLY valid JSON (no markdown):
   }
 
   static List<WorkoutPlanModel> _parsePlans(String jsonText) {
-    var clean = jsonText.trim();
-    if (clean.startsWith('```')) {
-      clean = clean.replaceAll(RegExp(r'```[a-z]*\n?'), '').trim();
+    final startIndex = jsonText.indexOf('{');
+    final endIndex = jsonText.lastIndexOf('}');
+    if (startIndex == -1 || endIndex == -1) {
+      throw Exception('Invalid JSON response: No object found.');
     }
+    final clean = jsonText.substring(startIndex, endIndex + 1);
 
     final data = jsonDecode(clean) as Map<String, dynamic>;
     final plansRaw = data['plans'] as List;
