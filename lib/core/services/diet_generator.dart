@@ -154,7 +154,7 @@ class DietGenerator {
         : 160;
     final targetCarbs = ((targetCalories * 0.45) / 4).round();
     final targetFat = ((targetCalories * 0.25) / 9).round();
-    final dailyBudget = user.monthlyBudget > 0 ? user.monthlyBudget / 30 : 150;
+    final double dailyBudget = user.monthlyBudget > 0 ? (user.monthlyBudget / 30).toDouble() : 150.0;
 
     final allowedTags = _getAllowedTags(user.dietPreference);
 
@@ -198,8 +198,8 @@ class DietGenerator {
         .toList();
 
     // Budget splits
-    final budgets = {'breakfast': 0.22, 'lunch': 0.35, 'snack': 0.12, 'dinner': 0.31};
-    final proteinSplits = {'breakfast': 0.25, 'lunch': 0.35, 'snack': 0.10, 'dinner': 0.30};
+    final Map<String, double> budgets = {'breakfast': 0.22, 'lunch': 0.35, 'snack': 0.12, 'dinner': 0.31};
+    final Map<String, double> proteinSplits = {'breakfast': 0.25, 'lunch': 0.35, 'snack': 0.10, 'dinner': 0.30};
 
     final mealDefs = [
       {'id': 'breakfast', 'title': 'Breakfast', 'time': '8:00 AM', 'emoji': '☀️'},
