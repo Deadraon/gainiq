@@ -12,24 +12,51 @@ class DietPlanScreen extends StatefulWidget {
 }
 
 class _DietPlanScreenState extends State<DietPlanScreen> {
-  int _expandedIdx = 0; // which meal card is open
+  int _expandedIdx = 0;
 
   @override
   Widget build(BuildContext context) {
-    final diet = context.watch<DietProvider>().currentDietPlan;
+    final dietProvider = context.watch<DietProvider>();
+    final diet = dietProvider.currentDietPlan;
     final user = context.watch<UserProvider>().currentUser;
 
-    if (diet == null) {
+    // ── AI Loading Screen ─────────────────────────────────────
+    if (diet == null || dietProvider.isLoading) {
       return Scaffold(
         backgroundColor: const Color(0xFF0D0D0D),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const CircularProgressIndicator(color: Color(0xFFE5FF00)),
-              const SizedBox(height: 16),
-              Text('Generating your diet plan...',
-                  style: TextStyle(color: Colors.white.withOpacity(0.5))),
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE5FF00).withOpacity(0.1),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFFE5FF00).withOpacity(0.4), width: 2),
+                ),
+                child: const Icon(Icons.auto_awesome, color: Color(0xFFE5FF00), size: 36),
+              ),
+              const SizedBox(height: 24),
+              const Text('Gemini AI', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20)),
+              const SizedBox(height: 8),
+              Text(
+                dietProvider.statusMessage.isNotEmpty
+                    ? dietProvider.statusMessage
+                    : '✨ Crafting your personalized diet plan...',
+                style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 14),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 28),
+              const SizedBox(
+                width: 180,
+                child: LinearProgressIndicator(
+                  color: Color(0xFFE5FF00),
+                  backgroundColor: Colors.white10,
+                  minHeight: 3,
+                ),
+              ),
             ],
           ),
         ),
@@ -115,8 +142,9 @@ class _DietPlanScreenState extends State<DietPlanScreen> {
                     ),
                     const SizedBox(height: 20),
 
-                    // ── AI badge ──────────────────────────────────────
+                    // ── AI badge + Regenerate button ───────────────────
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -125,16 +153,39 @@ class _DietPlanScreenState extends State<DietPlanScreen> {
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(color: const Color(0xFFE5FF00).withOpacity(0.3)),
                           ),
-                          child: const Row(
+                          child: Row(
                             children: [
-                              Icon(Icons.auto_awesome, color: Color(0xFFE5FF00), size: 13),
-                              SizedBox(width: 5),
-                              Text('AI-Generated  •  Indian Foods  •  Budget Optimised',
-                                  style: TextStyle(
-                                      color: Color(0xFFE5FF00), fontSize: 11, fontWeight: FontWeight.w600)),
+                              const Icon(Icons.auto_awesome, color: Color(0xFFE5FF00), size: 13),
+                              const SizedBox(width: 5),
+                              Text(
+                                dietProvider.isAIGenerated
+                                    ? 'Gemini AI  •  Indian Foods  •  Budget Optimised'
+                                    : 'Smart Plan  •  Indian Foods  •  Budget Optimised',
+                                style: const TextStyle(
+                                    color: Color(0xFFE5FF00), fontSize: 11, fontWeight: FontWeight.w600),
+                              ),
                             ],
                           ),
                         ),
+                        if (user != null)
+                          GestureDetector(
+                            onTap: () => context.read<DietProvider>().regenerate(user),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.06),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: Colors.white.withOpacity(0.12)),
+                              ),
+                              child: const Row(
+                                children: [
+                                  Icon(Icons.refresh_rounded, color: Colors.white54, size: 13),
+                                  SizedBox(width: 4),
+                                  Text('Regenerate', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                                ],
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -574,27 +625,25 @@ class _TipsCard extends StatelessWidget {
 
   List<String> _getTips() {
     final goal = (user?.primaryGoal ?? '').toLowerCase();
-    if (goal == 'bulking') {
-      return [
-        '🥛 Drink 3–4L water daily',
-        '⏰ Eat every 3–4 hours to keep protein synthesis high',
-        '🌙 Have a casein-rich snack before bed (curd/paneer)',
-        '💪 Add 5–10% more calories if not gaining weight in 2 weeks',
-      ];
-    } else if (goal.contains('cut') || goal.contains('loss')) {
-      return [
-        '🥦 Fill half your plate with vegetables',
-        '🥤 Drink water before meals to reduce appetite',
-        '⚖️ Weigh yourself weekly, same time each day',
-        '🏃 Add 20 min light cardio on rest days for extra burn',
-      ];
-    }
-    return [
-      '🥛 Drink at least 2.5–3L water daily',
-      '⏰ Don\'t skip meals — consistency is key',
-      '🌿 Include a variety of colors in your meals',
-      '😴 Sleep 7–8 hours — it affects metabolism',
-    ];
+    final diet = (user?.dietPreference ?? '').toLowerCase();
+
+    // Diet-specific base tips
+    final dietTips = diet.contains('veg') && !diet.contains('egg') && !diet.contains('non')
+        ? ['🌱 Combine dal + rice or roti for complete protein', '🧀 Use paneer/tofu/soya as your primary protein source']
+        : diet.contains('egg')
+            ? ['🥚 Eggs are a complete protein — aim for 3–4 eggs/day', '🥛 Pair eggs with milk or curd for better amino acid profile']
+            : ['🍗 Lean chicken breast has ~31g protein per 100g', '🐟 Include fish 3x/week for omega-3 & protein'];
+
+    // Goal-specific tips
+    final goalTips = goal == 'bulking'
+        ? ['⏰ Eat every 3–4 hours to maximise protein synthesis', '🌙 Have curd/paneer before bed — slow-digesting protein', '💪 If not gaining in 2 weeks, add 200 kcal more per day']
+        : goal.contains('cut') || goal.contains('loss')
+            ? ['🥦 Fill half your plate with low-cal vegetables', '🥤 Drink water before meals to reduce appetite', '⚖️ Weigh weekly (same time) to track progress']
+            : goal == 'lean muscle'
+                ? ['🔄 Rotate protein sources daily for full amino coverage', '⏳ Eat within 30 min post-workout for recovery', '😴 Sleep 8h — growth hormone peaks during deep sleep']
+                : ['🥛 Drink 2.5–3L water daily', '⏰ Don\'t skip meals — consistency is key', '🌿 Eat a rainbow of veggies for micronutrients'];
+
+    return [...dietTips, ...goalTips];
   }
 
   @override

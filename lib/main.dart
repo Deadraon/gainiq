@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'firebase_options.dart';
 
 import 'core/theme.dart';
@@ -12,6 +13,12 @@ import 'core/providers/diet_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Load API keys from .env
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (e) {
+    debugPrint('dotenv load failed: $e');
+  }
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
