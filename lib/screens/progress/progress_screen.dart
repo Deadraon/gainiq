@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../core/providers/workout_provider.dart';
+import '../../models/workout_log_model.dart';
 
 class ProgressScreen extends StatelessWidget {
   const ProgressScreen({super.key});

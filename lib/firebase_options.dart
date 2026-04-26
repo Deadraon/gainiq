@@ -7,9 +7,19 @@ class DefaultFirebaseOptions {
     if (kIsWeb) {
       return web;
     }
-    // For now, we only setup the web configuration.
-    // To add Android/iOS, we would use the flutterfire CLI.
-    return web;
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return android;
+      case TargetPlatform.iOS:
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for iOS - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
+      default:
+        throw UnsupportedError(
+          'DefaultFirebaseOptions are not supported for this platform.',
+        );
+    }
   }
 
   static const FirebaseOptions web = FirebaseOptions(
@@ -18,6 +28,14 @@ class DefaultFirebaseOptions {
     messagingSenderId: '274931184133',
     projectId: 'gainiq-app-9922',
     authDomain: 'gainiq-app-9922.firebaseapp.com',
+    storageBucket: 'gainiq-app-9922.firebasestorage.app',
+  );
+
+  static const FirebaseOptions android = FirebaseOptions(
+    apiKey: 'AIzaSyAG3bH9LCAANAntNKqU55lLvtULwPgMqKA',
+    appId: '1:274931184133:android:7f11b917b3a7d6cc0e226c',
+    messagingSenderId: '274931184133',
+    projectId: 'gainiq-app-9922',
     storageBucket: 'gainiq-app-9922.firebasestorage.app',
   );
 }

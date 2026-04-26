@@ -53,3 +53,10 @@ lib/generated_plugin_registrant.dart
 *.DS_Store
 .env
 *.log
+
+# Build/debug artifacts
+build_output.txt
+error_log.txt
+gradle_full.txt
+android/error_log.txt
+android/gradle_error.txt
