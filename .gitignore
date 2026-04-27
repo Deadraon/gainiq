@@ -60,3 +60,6 @@ error_log.txt
 gradle_full.txt
 android/error_log.txt
 android/gradle_error.txt
+
+.vercel
+node_modules/ 

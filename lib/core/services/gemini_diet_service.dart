@@ -10,12 +10,11 @@ class GeminiDietService {
 
   static GenerativeModel _getModel() {
     _model ??= GenerativeModel(
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.0-flash',
       apiKey: dotenv.env['GEMINI_API_KEY'] ?? '',
       generationConfig: GenerationConfig(
         temperature: 0.3,
         maxOutputTokens: 8192,
-        responseMimeType: 'application/json',
       ),
     );
     return _model!;
@@ -34,38 +33,20 @@ class GeminiDietService {
       final model = _getModel();
       final prompt = _buildPrompt(user);
       
-      final stream = model.generateContentStream([Content.text(prompt)]);
-      final StringBuffer buffer = StringBuffer();
-      
-      // Use await for to consume the stream chunks as they arrive.
-      // This prevents long-idle connection drops.
-      await for (final chunk in stream.timeout(const Duration(seconds: 180))) {
-        buffer.write(chunk.text);
-        
-        // Report progress back to UI if requested
-        if (onProgress != null) {
-          final content = buffer.toString().toLowerCase();
-          if (content.contains('"id": "dinner"')) {
-            onProgress('Finishing up Dinner...');
-          } else if (content.contains('"id": "snack"')) {
-            onProgress('Crafting your Evening Snack...');
-          } else if (content.contains('"id": "lunch"')) {
-            onProgress('Preparing Lunch options...');
-          } else if (content.contains('"id": "breakfast"')) {
-            onProgress('Generating Breakfast...');
-          } else {
-            onProgress('Analyzing your profile & goals...');
-          }
-        }
-      }
-      
-      final text = buffer.toString();
+      onProgress?.call('Analyzing your profile & goals...');
+      final response = await model.generateContent(
+        [Content.text(prompt)],
+      ).timeout(const Duration(seconds: 180));
+      onProgress?.call('Finishing up your plan...');
+
+      final text = response.text ?? '';
+      print('GEMINI RAW (first 300): ${text.length > 300 ? text.substring(0, 300) : text}');
       if (text.isEmpty) throw Exception('Empty response from Gemini');
 
       return _parseDietPlan(text, user);
     } catch (e) {
-      print('GEMINI SERVICE ERROR: $e');
-      rethrow;
+      print('GEMINI SERVICE ERROR: $e — falling back to local generator');
+      return DietGenerator.generate(user);
     }
   }
 
@@ -92,122 +73,37 @@ class GeminiDietService {
     }
 
     return '''
-You are an expert Indian nutritionist. Generate a personalized Indian daily diet plan.
+Indian diet plan JSON. User: ${user.age}y ${user.gender} ${user.weight}kg, goal:${user.primaryGoal}, diet:${user.dietPreference}, budget:Rs.$dailyBudget/day. Targets:${targetCals}kcal P:${targetProtein}g C:${targetCarbs}g F:${targetFat}g. Rule:$dietFocus
 
-USER PROFILE:
-- Age: ${user.age}y, Gender: ${user.gender}, Weight: ${user.weight}kg, Height: ${user.height}cm
-- Goal: ${user.primaryGoal}, Body Type: ${user.bodyType}
-- Diet: ${user.dietPreference}, Budget: ₹$dailyBudget/day
-- Workout: ${user.workoutTiming}, Allergies: ${user.allergies.isEmpty ? 'None' : user.allergies}
-
-TARGETS: ${targetCals}kcal | Protein:${targetProtein}g | Carbs:${targetCarbs}g | Fat:${targetFat}g
-
-RULES:
-- DIET REQUIREMENT: $dietFocus
-- Only common affordable Indian foods. Real INR prices. Stay within ₹$dailyBudget budget.
-- Provide a clear, actionable diet plan.
-- NO alternatives needed.
-- VARIETY IS CRITICAL: The user is bored of basic suggestions. Do NOT suggest simple sandwiches or basic dal/roti every time.
-- INCLUDE SPECIFIC FOODS: Actively include healthy, modern Indian options like Oats, Muesli, Quinoa, Paneer, Sprouts, and diverse Chicken/Fish preparations.
-- RANDOMIZE: Every time you are called, suggest a DIFFERENT set of meals. Surprise the user with variety!
-
-CRITICAL RULES:
-- You MUST fill ALL 4 meals with REAL food items. Every meal MUST have 2-3 foodItems.
-- NEVER leave any foodItems array empty. NEVER set calories/protein/carbs/fat to 0.
-- All values must be real numbers, NOT placeholders.
-
-Return ONLY valid JSON. No markdown, no code fences, no extra text. Replace the example foods below with YOUR OWN choices based on the user profile above:
-{
-  "targetCalories": $targetCals,
-  "targetProtein": $targetProtein,
-  "targetCarbs": $targetCarbs,
-  "targetFat": $targetFat,
-  "dailyBudget": $dailyBudget,
-  "meals": [
-    {
-      "id": "breakfast",
-      "title": "Breakfast",
-      "time": "8:00 AM",
-      "emoji": "☀️",
-      "calories": 450,
-      "proteinGrams": 28,
-      "carbsGrams": 52,
-      "fatGrams": 14,
-      "cost": 35,
-      "foodItems": [
-        {"name": "Moong Dal Chilla (3 pcs)", "calories": 280, "protein": 18, "carbs": 32, "fat": 8, "serving": "3 chillas with chutney", "cost": 20},
-        {"name": "Banana Peanut Butter Shake", "calories": 170, "protein": 10, "carbs": 20, "fat": 6, "serving": "1 glass (300ml)", "cost": 15}
-      ]
-    },
-    {
-      "id": "lunch",
-      "title": "Lunch",
-      "time": "1:30 PM",
-      "emoji": "🌤",
-      "calories": 620,
-      "proteinGrams": 42,
-      "carbsGrams": 68,
-      "fatGrams": 18,
-      "cost": 50,
-      "foodItems": [
-        {"name": "Rajma Curry", "calories": 220, "protein": 14, "carbs": 30, "fat": 5, "serving": "1 bowl (200g)", "cost": 18},
-        {"name": "Brown Rice", "calories": 200, "protein": 5, "carbs": 42, "fat": 2, "serving": "1 cup cooked", "cost": 10},
-        {"name": "Paneer Bhurji", "calories": 200, "protein": 18, "carbs": 6, "fat": 12, "serving": "100g paneer", "cost": 22}
-      ]
-    },
-    {
-      "id": "snack",
-      "title": "Pre-Workout Snack",
-      "time": "5:00 PM",
-      "emoji": "⚡",
-      "calories": 280,
-      "proteinGrams": 15,
-      "carbsGrams": 35,
-      "fatGrams": 8,
-      "cost": 25,
-      "foodItems": [
-        {"name": "Sprouts Chaat", "calories": 180, "protein": 12, "carbs": 22, "fat": 4, "serving": "1 bowl (150g)", "cost": 15},
-        {"name": "Roasted Makhana", "calories": 100, "protein": 3, "carbs": 13, "fat": 4, "serving": "1 cup", "cost": 10}
-      ]
-    },
-    {
-      "id": "dinner",
-      "title": "Dinner",
-      "time": "8:30 PM",
-      "emoji": "🌙",
-      "calories": 550,
-      "proteinGrams": 38,
-      "carbsGrams": 55,
-      "fatGrams": 16,
-      "cost": 45,
-      "foodItems": [
-        {"name": "Dal Tadka", "calories": 180, "protein": 12, "carbs": 24, "fat": 5, "serving": "1 bowl (200g)", "cost": 12},
-        {"name": "Multigrain Roti", "calories": 120, "protein": 4, "carbs": 22, "fat": 3, "serving": "2 rotis", "cost": 8},
-        {"name": "Palak Paneer", "calories": 250, "protein": 16, "carbs": 9, "fat": 18, "serving": "1 bowl (200g)", "cost": 25}
-      ]
-    }
-  ]
-}
+Fill ALL fields with real Indian food values. 2 foodItems per meal. Short names. Return ONLY minified JSON, no spaces, no markdown:
+{"targetCalories":$targetCals,"targetProtein":$targetProtein,"targetCarbs":$targetCarbs,"targetFat":$targetFat,"dailyBudget":$dailyBudget,"meals":[{"id":"breakfast","title":"Breakfast","time":"8:00 AM","emoji":"sunrise","calories":FILL,"proteinGrams":FILL,"carbsGrams":FILL,"fatGrams":FILL,"cost":FILL,"foodItems":[{"name":"FILL","calories":FILL,"protein":FILL,"carbs":FILL,"fat":FILL,"serving":"FILL","cost":FILL},{"name":"FILL","calories":FILL,"protein":FILL,"carbs":FILL,"fat":FILL,"serving":"FILL","cost":FILL}]},{"id":"lunch","title":"Lunch","time":"1:00 PM","emoji":"sun","calories":FILL,"proteinGrams":FILL,"carbsGrams":FILL,"fatGrams":FILL,"cost":FILL,"foodItems":[{"name":"FILL","calories":FILL,"protein":FILL,"carbs":FILL,"fat":FILL,"serving":"FILL","cost":FILL},{"name":"FILL","calories":FILL,"protein":FILL,"carbs":FILL,"fat":FILL,"serving":"FILL","cost":FILL}]},{"id":"snack","title":"Snack","time":"5:00 PM","emoji":"bolt","calories":FILL,"proteinGrams":FILL,"carbsGrams":FILL,"fatGrams":FILL,"cost":FILL,"foodItems":[{"name":"FILL","calories":FILL,"protein":FILL,"carbs":FILL,"fat":FILL,"serving":"FILL","cost":FILL},{"name":"FILL","calories":FILL,"protein":FILL,"carbs":FILL,"fat":FILL,"serving":"FILL","cost":FILL}]},{"id":"dinner","title":"Dinner","time":"8:30 PM","emoji":"moon","calories":FILL,"proteinGrams":FILL,"carbsGrams":FILL,"fatGrams":FILL,"cost":FILL,"foodItems":[{"name":"FILL","calories":FILL,"protein":FILL,"carbs":FILL,"fat":FILL,"serving":"FILL","cost":FILL},{"name":"FILL","calories":FILL,"protein":FILL,"carbs":FILL,"fat":FILL,"serving":"FILL","cost":FILL}]}]}
 ''';
   }
 
   static DietPlanModel _parseDietPlan(String jsonText, UserModel user) {
-    // Strip markdown code fences if present
-    String text = jsonText.replaceAll(RegExp(r'```json\s*'), '').replaceAll(RegExp(r'```\s*'), '').trim();
-    
+    String text = jsonText
+        .replaceAll(RegExp(r'```json\s*'), '')
+        .replaceAll(RegExp(r'```\s*'), '')
+        .trim();
+
     final startIndex = text.indexOf('{');
     final endIndex = text.lastIndexOf('}');
     if (startIndex == -1 || endIndex == -1) {
       throw Exception('Invalid JSON response: No object found.');
     }
-    
+
     String clean = text.substring(startIndex, endIndex + 1);
-    
-    // Fix trailing commas before ] or } (common Gemini mistake)
+
+    // Fix common Gemini JSON mistakes
     clean = clean.replaceAll(RegExp(r',\s*]'), ']');
     clean = clean.replaceAll(RegExp(r',\s*}'), '}');
-    
-    final Map<String, dynamic> data = jsonDecode(clean);
+    clean = clean.replaceAll(RegExp(r'}\s*{'), '},{');
+    clean = clean.replaceAll(RegExp(r']\s*\['), '],[');
+    // Remove control characters but keep valid unicode/emoji
+    clean = clean.replaceAll(RegExp(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]'), '');
+
+    try {
+      final Map<String, dynamic> data = jsonDecode(clean);
 
     final meals = (data['meals'] as List).map((m) {
       final items = (m['foodItems'] as List).map((f) {
@@ -259,6 +155,11 @@ Return ONLY valid JSON. No markdown, no code fences, no extra text. Replace the 
       dailyBudget: _toDouble(data['dailyBudget']),
       meals: meals,
     );
+    } catch (e) {
+      print('JSON PARSE FAILED. Clean JSON around error:');
+      print(clean.length > 800 ? clean.substring(0, 800) : clean);
+      rethrow;
+    }
   }
 
   static int _toInt(dynamic v) {

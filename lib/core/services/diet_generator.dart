@@ -1,3 +1,4 @@
+import 'dart:math';
 import '../../models/diet_model.dart';
 import '../../models/user_model.dart';
 import 'food_database.dart';
@@ -9,7 +10,6 @@ export 'food_database.dart' show FoodItem;
 // ─────────────────────────────────────────────────────────────
 class CalorieCalculator {
   static int dailyCalories(UserModel user) {
-    // Mifflin-St Jeor BMR
     double bmr;
     if (user.gender.toLowerCase() == 'female') {
       bmr = (10 * user.weight) + (6.25 * user.height) - (5 * user.age) - 161;
@@ -17,7 +17,6 @@ class CalorieCalculator {
       bmr = (10 * user.weight) + (6.25 * user.height) - (5 * user.age) + 5;
     }
 
-    // Activity multiplier based on workout location
     double activityMultiplier;
     switch (user.workoutLocation.toLowerCase()) {
       case 'gym':
@@ -34,7 +33,6 @@ class CalorieCalculator {
     }
     double tdee = bmr * activityMultiplier;
 
-    // Goal-based calorie adjustment
     switch (user.primaryGoal.toLowerCase()) {
       case 'bulking':
         return (tdee + 400).round();
@@ -71,7 +69,6 @@ class CalorieCalculator {
     return (user.weight * multiplier).round();
   }
 
-  // Macro split ratios per goal
   static Map<String, double> macroRatios(String goal) {
     switch (goal.toLowerCase()) {
       case 'bulking':
@@ -88,9 +85,11 @@ class CalorieCalculator {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  DIET GENERATOR
+//  SMART DIET GENERATOR
 // ─────────────────────────────────────────────────────────────
 class DietGenerator {
+  static final _random = Random();
+
   static DietPlanModel generate(UserModel user) {
     final targetCalories = user.isProfileComplete
         ? CalorieCalculator.dailyCalories(user)
@@ -103,17 +102,13 @@ class DietGenerator {
     final targetCarbs = ((targetCalories * ratios['carbs']!) / 4).round();
     final targetFat = ((targetCalories * ratios['fat']!) / 9).round();
 
-    // Daily budget: use actual monthly budget or fall back to ₹150/day
     final double dailyBudget =
         user.monthlyBudget > 0 ? (user.monthlyBudget / 30) : 150.0;
 
-    // Build allowed diet tags strictly per preference
     final allowedDietTags = _getAllowedDietTags(user.dietPreference);
-
-    // Filter allergens
+    final goalTag = _getGoalTag(user.primaryGoal);
     final allergies = user.allergies.toLowerCase();
 
-    // Build meals
     final meals = _buildMeals(
       user: user,
       dailyBudget: dailyBudget,
@@ -122,6 +117,7 @@ class DietGenerator {
       targetCarbs: targetCarbs.toDouble(),
       targetFat: targetFat.toDouble(),
       allowedDietTags: allowedDietTags,
+      goalTag: goalTag,
       allergies: allergies,
     );
 
@@ -136,7 +132,23 @@ class DietGenerator {
     );
   }
 
-  // ── STRICT diet tag filtering ──────────────────────────────
+  // ── Goal tag mapping ───────────────────────────────────────
+  static String _getGoalTag(String goal) {
+    switch (goal.toLowerCase()) {
+      case 'bulking':
+        return 'bulking';
+      case 'cutting':
+        return 'cutting';
+      case 'weight loss':
+        return 'weight_loss';
+      case 'lean muscle':
+        return 'lean_muscle';
+      default:
+        return 'maintenance';
+    }
+  }
+
+  // ── Diet tag filtering ─────────────────────────────────────
   static List<String> _getAllowedDietTags(String pref) {
     switch (pref.toLowerCase()) {
       case 'non-vegetarian':
@@ -150,14 +162,17 @@ class DietGenerator {
       case 'vegetarian':
       case 'veg':
       default:
-        return ['veg']; // ONLY veg items for vegetarians
+        return ['veg'];
     }
   }
 
-  // ── MEAL SLOT definitions with budget & protein split ──────
+  // ── Meal slots ─────────────────────────────────────────────
   static List<Map<String, dynamic>> _mealSlots(String goal, String timing) {
-    // Adjust meal timing if user works out in morning
     final isMorningWorkout = timing.toLowerCase().contains('morning');
+    final isBulking = goal.toLowerCase() == 'bulking';
+    final isCutting = goal.toLowerCase().contains('cut') ||
+        goal.toLowerCase().contains('loss');
+
     return [
       {
         'id': 'breakfast',
@@ -165,26 +180,26 @@ class DietGenerator {
         'time': isMorningWorkout ? '7:00 AM' : '8:00 AM',
         'emoji': '☀️',
         'budgetPct': 0.22,
-        'proteinPct': 0.25,
-        'caloriePct': 0.25,
+        'proteinPct': isBulking ? 0.28 : 0.25,
+        'caloriePct': isBulking ? 0.28 : 0.25,
       },
       {
         'id': 'lunch',
         'title': 'Lunch',
         'time': '1:00 PM',
         'emoji': '🌤',
-        'budgetPct': goal == 'bulking' ? 0.35 : 0.30,
-        'proteinPct': goal == 'bulking' ? 0.35 : 0.30,
-        'caloriePct': goal == 'bulking' ? 0.35 : 0.30,
+        'budgetPct': isBulking ? 0.35 : 0.32,
+        'proteinPct': isBulking ? 0.35 : 0.32,
+        'caloriePct': isBulking ? 0.35 : 0.32,
       },
       {
         'id': 'snack',
         'title': isMorningWorkout ? 'Post-Workout Snack' : 'Pre-Workout Snack',
         'time': isMorningWorkout ? '10:30 AM' : '5:00 PM',
         'emoji': '⚡',
-        'budgetPct': 0.15,
-        'proteinPct': 0.15,
-        'caloriePct': 0.15,
+        'budgetPct': isCutting ? 0.12 : 0.15,
+        'proteinPct': isCutting ? 0.18 : 0.15,
+        'caloriePct': isCutting ? 0.12 : 0.15,
       },
       {
         'id': 'dinner',
@@ -192,8 +207,8 @@ class DietGenerator {
         'time': '8:30 PM',
         'emoji': '🌙',
         'budgetPct': 0.28,
-        'proteinPct': 0.30,
-        'caloriePct': 0.30,
+        'proteinPct': isCutting ? 0.28 : 0.28,
+        'caloriePct': isCutting ? 0.26 : 0.28,
       },
     ];
   }
@@ -206,14 +221,12 @@ class DietGenerator {
     required double targetCarbs,
     required double targetFat,
     required List<String> allowedDietTags,
+    required String goalTag,
     required String allergies,
   }) {
-    // Filter the database: ONLY foods whose diet tag matches
+    // Filter foods: must match diet tag AND not contain allergen
     final allowed = indianFoodDB.where((f) {
-      // Must have at least one diet tag that is in allowedDietTags
-      final hasDietTag =
-          f.tags.any((t) => allowedDietTags.contains(t));
-      // Must not contain allergen
+      final hasDietTag = f.tags.any((t) => allowedDietTags.contains(t));
       final hasAllergen = allergies.isNotEmpty &&
           f.allergen != null &&
           allergies.contains(f.allergen!.toLowerCase());
@@ -221,10 +234,11 @@ class DietGenerator {
     }).toList();
 
     final slots = _mealSlots(user.primaryGoal, user.workoutTiming);
+    final usedFoodNames = <String>{};
 
     return slots.map((slot) {
       final id = slot['id'] as String;
-      return _buildMeal(
+      final meal = _buildMeal(
         id: id,
         title: slot['title'] as String,
         time: slot['time'] as String,
@@ -235,8 +249,15 @@ class DietGenerator {
         mealTag: id,
         allowedFoods: allowed,
         goal: user.primaryGoal,
+        goalTag: goalTag,
         dietPref: user.dietPreference.toLowerCase(),
+        usedFoodNames: usedFoodNames,
       );
+      // Track used foods for variety
+      for (final item in meal.foodItems) {
+        usedFoodNames.add(item.name);
+      }
+      return meal;
     }).toList();
   }
 
@@ -251,9 +272,11 @@ class DietGenerator {
     required String mealTag,
     required List<FoodItem> allowedFoods,
     required String goal,
+    required String goalTag,
     required String dietPref,
+    required Set<String> usedFoodNames,
   }) {
-    // Foods that belong to this meal slot
+    // Get candidates for this meal slot
     var candidates = allowedFoods
         .where((f) => f.tags.contains(mealTag))
         .toList();
@@ -262,37 +285,29 @@ class DietGenerator {
       return MealModel(id: id, title: title, time: time, emoji: emoji);
     }
 
-    // Scoring: prioritise differently by goal
+    // Score foods based on goal + diet preference
     candidates.sort((a, b) {
-      double scoreA, scoreB;
-      final isLoss = goal.toLowerCase().contains('loss') ||
-          goal.toLowerCase().contains('cut');
-      if (isLoss) {
-        // For cutting: maximise protein/calorie density, respect budget
-        scoreA = (a.protein / (a.calories + 1)) * (100 / (a.costPerServing + 1));
-        scoreB = (b.protein / (b.calories + 1)) * (100 / (b.costPerServing + 1));
-      } else {
-        if (goal == 'bulking') {
-          scoreA = a.protein / (a.costPerServing + 1) + (a.calories / 100);
-          scoreB = b.protein / (b.costPerServing + 1) + (b.calories / 100);
-        } else {
-          scoreA = a.protein / (a.calories + 1);
-          scoreB = b.protein / (b.calories + 1);
-        }
-      }
-      
-      // Boost score for non-veg/egg if user prefers it and meal is lunch/dinner
-      if (dietPref.contains('non') && (id == 'lunch' || id == 'dinner')) {
-        if (a.tags.contains('nonveg')) scoreA *= 10;
-        if (b.tags.contains('nonveg')) scoreB *= 10;
-      } else if (dietPref.contains('egg') && (id == 'lunch' || id == 'dinner' || id == 'breakfast')) {
-        if (a.tags.contains('egg')) scoreA *= 10;
-        if (b.tags.contains('egg')) scoreB *= 10;
-      }
-
-      return scoreB.compareTo(scoreA); // Descending
+      double scoreA = _scoreFood(a, goal, goalTag, id, dietPref, usedFoodNames, budget);
+      double scoreB = _scoreFood(b, goal, goalTag, id, dietPref, usedFoodNames, budget);
+      return scoreB.compareTo(scoreA);
     });
 
+    // Add randomization — shuffle top candidates a bit for variety
+    final topCount = min(candidates.length, 10);
+    final topCandidates = candidates.sublist(0, topCount);
+    topCandidates.shuffle(_random);
+    // Re-sort with slight randomization weight
+    topCandidates.sort((a, b) {
+      double scoreA = _scoreFood(a, goal, goalTag, id, dietPref, usedFoodNames, budget);
+      double scoreB = _scoreFood(b, goal, goalTag, id, dietPref, usedFoodNames, budget);
+      // Add small random noise to prevent same order every time
+      scoreA += _random.nextDouble() * 0.15;
+      scoreB += _random.nextDouble() * 0.15;
+      return scoreB.compareTo(scoreA);
+    });
+    candidates = [...topCandidates, ...candidates.sublist(topCount)];
+
+    // Greedy selection within budget
     final selected = <FoodItem>[];
     double usedBudget = 0;
     double usedProtein = 0;
@@ -300,10 +315,13 @@ class DietGenerator {
     double usedCarbs = 0;
     double usedFat = 0;
 
-    // Select items greedily within budget, targeting protein & calories
+    final maxItems = _maxItemsForMeal(id, goal);
+
     for (final food in candidates) {
-      if (selected.length >= 3) break; // max 3 items per meal
-      final budgetOk = usedBudget + food.costPerServing <= budget + 10;
+      if (selected.length >= maxItems) break;
+      // Skip already used foods for variety
+      if (usedFoodNames.contains(food.name)) continue;
+      final budgetOk = usedBudget + food.costPerServing <= budget + 15;
       if (budgetOk) {
         selected.add(food);
         usedBudget += food.costPerServing;
@@ -311,21 +329,34 @@ class DietGenerator {
         usedCalories += food.calories;
         usedCarbs += food.carbs;
         usedFat += food.fat;
-        // Stop once protein & calorie targets met with at least 1 item
         if (selected.length >= 1 &&
-            usedProtein >= proteinTarget &&
-            usedCalories >= calorieTarget * 0.85) break;
+            usedProtein >= proteinTarget * 0.85 &&
+            usedCalories >= calorieTarget * 0.80) break;
       }
     }
 
-    // Fallback: pick best item if budget too tight
+    // Fallback: if nothing selected, pick first affordable item ignoring used
     if (selected.isEmpty) {
-      selected.add(candidates.first);
-      usedBudget = candidates.first.costPerServing;
-      usedProtein = candidates.first.protein;
-      usedCalories = candidates.first.calories.toDouble();
-      usedCarbs = candidates.first.carbs;
-      usedFat = candidates.first.fat;
+      for (final food in candidates) {
+        if (food.costPerServing <= budget + 20) {
+          selected.add(food);
+          usedBudget = food.costPerServing;
+          usedProtein = food.protein;
+          usedCalories = food.calories.toDouble();
+          usedCarbs = food.carbs;
+          usedFat = food.fat;
+          break;
+        }
+      }
+      if (selected.isEmpty && candidates.isNotEmpty) {
+        final food = candidates.first;
+        selected.add(food);
+        usedBudget = food.costPerServing;
+        usedProtein = food.protein;
+        usedCalories = food.calories.toDouble();
+        usedCarbs = food.carbs;
+        usedFat = food.fat;
+      }
     }
 
     return MealModel(
@@ -350,5 +381,76 @@ class DietGenerator {
       fatGrams: usedFat.round(),
       cost: usedBudget,
     );
+  }
+
+  // ── Smart food scorer ──────────────────────────────────────
+  static double _scoreFood(
+    FoodItem food,
+    String goal,
+    String goalTag,
+    String mealId,
+    String dietPref,
+    Set<String> usedFoodNames,
+    double mealBudget,
+  ) {
+    double score = 0;
+
+    // 1. Goal-tag match bonus
+    if (food.tags.contains(goalTag)) score += 3.0;
+
+    // 2. Goal-specific scoring
+    switch (goal.toLowerCase()) {
+      case 'bulking':
+        // High calories + high protein per rupee
+        score += (food.calories / 100) * 0.5;
+        score += (food.protein / (food.costPerServing + 1)) * 1.5;
+        break;
+      case 'cutting':
+      case 'weight loss':
+        // Max protein, min calories, min fat
+        score += (food.protein / (food.calories + 1)) * 10;
+        score -= (food.fat / 10) * 0.5;
+        score += food.calories < 200 ? 1.0 : 0;
+        break;
+      case 'lean muscle':
+        // Balanced protein density
+        score += (food.protein / (food.calories + 1)) * 7;
+        score += (food.protein / (food.costPerServing + 1)) * 1.0;
+        break;
+      default:
+        // Balanced
+        score += food.protein * 0.5;
+        score -= (food.calories / 200) * 0.2;
+    }
+
+    // 3. Diet preference: strongly boost preferred protein sources
+    if ((dietPref.contains('non') || dietPref.contains('egg')) &&
+        (mealId == 'lunch' || mealId == 'dinner' || mealId == 'snack')) {
+      if (dietPref.contains('non') && food.tags.contains('nonveg')) score += 8.0;
+      if (dietPref.contains('egg') && food.tags.contains('egg')) score += 6.0;
+    }
+
+    // 4. Budget fit
+    if (food.costPerServing <= mealBudget) score += 1.0;
+    if (food.costPerServing > mealBudget * 1.5) score -= 2.0;
+
+    // 5. Penalty for already-used foods (variety)
+    if (usedFoodNames.contains(food.name)) score -= 10.0;
+
+    return score;
+  }
+
+  // ── Max items per meal based on goal ──────────────────────
+  static int _maxItemsForMeal(String mealId, String goal) {
+    if (mealId == 'snack') return 2;
+    switch (goal.toLowerCase()) {
+      case 'bulking':
+        return 3;
+      case 'cutting':
+      case 'weight loss':
+        return 2;
+      default:
+        return 3;
+    }
   }
 }
