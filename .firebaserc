@@ -1,5 +1,7 @@
 {
-  "projects": {},
+  "projects": {
+    "default": "gainiq-app-9922"
+  },
   "targets": {},
   "etags": {}
 }

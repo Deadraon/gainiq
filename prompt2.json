@@ -1,0 +1,14 @@
+{
+  "contents": [
+    {
+      "parts": [
+        {
+          "text": "You are an expert Indian nutritionist. Generate a personalized Indian daily diet plan.\n\nUSER PROFILE:\n- Age: 25y, Gender: Male, Weight: 70kg, Height: 175cm\n- Goal: Muscle Gain, Body Type: Ectomorph\n- Diet: Non-Veg, Budget: ₹150/day\n- Workout: Morning, Allergies: None\n\nTARGETS: 2500kcal | Protein:150g | Carbs:300g | Fat:70g\n\nRULES:\n- DIET REQUIREMENT: Non-veg=MUST INCLUDE chicken, fish, or mutton as main protein sources in lunch and dinner.\n- Only common affordable Indian foods. Real INR prices. Stay within ₹150 budget.\n- For EACH food item provide 1 alternative (similar macros, same diet type, different food).\n- Alternatives must follow the same diet rules strictly.\n\nReturn ONLY valid JSON (no markdown):\n{\n  \"targetCalories\": 2500,\n  \"targetProtein\": 150,\n  \"targetCarbs\": 300,\n  \"targetFat\": 70,\n  \"dailyBudget\": 150,\n  \"meals\": [\n    {\n      \"id\": \"breakfast\",\n      \"title\": \"Breakfast\",\n      \"time\": \"8:00 AM\",\n      \"emoji\": \"☀️\",\n      \"calories\": 450,\n      \"proteinGrams\": 30,\n      \"carbsGrams\": 55,\n      \"fatGrams\": 12,\n      \"cost\": 38,\n      \"foodItems\": [\n        {\n          \"name\": \"Moong Dal Chilla (3)\",\n          \"calories\": 320,\n          \"protein\": 22,\n          \"carbs\": 38,\n          \"fat\": 6,\n          \"serving\": \"3 chillas with green chutney\",\n          \"cost\": 18,\n          \"alternatives\": [\n            {\n              \"name\": \"Oats Upma (1 bowl)\",\n              \"calories\": 290,\n              \"protein\": 10,\n              \"carbs\": 45,\n              \"fat\": 5,\n              \"serving\": \"1 bowl with veggies\",\n              \"cost\": 20\n            }\n          ]\n        }\n      ]\n    },\n    {\n      \"id\": \"lunch\",\n      \"title\": \"Lunch\",\n      \"time\": \"1:30 PM\",\n      \"emoji\": \"🌤\",\n      \"calories\": 0,\n      \"proteinGrams\": 0,\n      \"carbsGrams\": 0,\n      \"fatGrams\": 0,\n      \"cost\": 0,\n      \"foodItems\": []\n    },\n    {\n      \"id\": \"snack\",\n      \"title\": \"Pre-Workout Snack\",\n      \"time\": \"5:00 PM\",\n      \"emoji\": \"⚡\",\n      \"calories\": 0,\n      \"proteinGrams\": 0,\n      \"carbsGrams\": 0,\n      \"fatGrams\": 0,\n      \"cost\": 0,\n      \"foodItems\": []\n    },\n    {\n      \"id\": \"dinner\",\n      \"title\": \"Dinner\",\n      \"time\": \"8:30 PM\",\n      \"emoji\": \"🌙\",\n      \"calories\": 0,\n      \"proteinGrams\": 0,\n      \"carbsGrams\": 0,\n      \"fatGrams\": 0,\n      \"cost\": 0,\n      \"foodItems\": []\n    }\n  ]\n}\n"
+        }
+      ]
+    }
+  ],
+  "generationConfig": {
+    "temperature": 0.7
+  }
+}

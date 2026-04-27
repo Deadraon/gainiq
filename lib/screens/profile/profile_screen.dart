@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/providers/user_provider.dart';
+import '../../core/providers/subscription_provider.dart';
 import '../auth/auth_screen.dart';
+import '../subscription/paywall_screen.dart';
+import '../subscription/admin_coupon_screen.dart';
 import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -11,9 +14,15 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final userProvider = context.watch<UserProvider>();
+    final subProvider = context.watch<SubscriptionProvider>();
+    final subscription = subProvider.subscription;
     final user = userProvider.currentUser;
-    final email = FirebaseAuth.instance.currentUser?.email ?? '';
-    final initials = (user?.name.isNotEmpty == true) ? user!.name[0].toUpperCase() : '?';
+    final firebaseUser = FirebaseAuth.instance.currentUser;
+    final email = firebaseUser?.email ?? '';
+    final initials =
+        (user?.name.isNotEmpty == true) ? user!.name[0].toUpperCase() : '?';
+
+    // Check admin claim from token — FutureBuilder so we read live token
 
     if (userProvider.isLoading) {
       return const Scaffold(
@@ -85,6 +94,51 @@ class ProfileScreen extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(email, style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13)),
+              const SizedBox(height: 10),
+
+              // ── Subscription Badge ──
+              GestureDetector(
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const PaywallScreen()),
+                ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: subscription.isPaid
+                          ? (subscription.isAdvance
+                              ? [const Color(0xFFE5FF00), const Color(0xFFB8CC00)]
+                              : [const Color(0xFF3D8BFF), const Color(0xFF1A5FD4)])
+                          : [const Color(0xFF2A2A2A), const Color(0xFF1A1A1A)],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        subscription.planEmoji,
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        subscription.isPaid
+                            ? '${subscription.planName} Plan'
+                            : 'Free Plan · Upgrade',
+                        style: TextStyle(
+                          color: subscription.isPaid
+                              ? (subscription.isAdvance ? Colors.black : Colors.white)
+                              : Colors.white70,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                      if (!subscription.isPaid) ...
+                        [const SizedBox(width: 4), const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white54, size: 11)],
+                    ],
+                  ),
+                ),
+              ),
               const SizedBox(height: 6),
 
               // Profile incomplete warning
@@ -144,6 +198,68 @@ class ProfileScreen extends StatelessWidget {
               ),
               const SizedBox(height: 20),
 
+              // ── Upgrade Banner (only for free users) ──
+              if (!subProvider.isPaid)
+                GestureDetector(
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const PaywallScreen()),
+                  ),
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 20),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF1C1C00), Color(0xFF111100)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFE5FF00).withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Text('⚡', style: TextStyle(fontSize: 28)),
+                        const SizedBox(width: 14),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Unlock Premium Features',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14),
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                'Pro from ₹199/mo · Advance from ₹299/mo',
+                                style: TextStyle(
+                                    color: Colors.white54, fontSize: 11),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE5FF00),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text(
+                            'Upgrade',
+                            style: TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 11),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
               // ── Profile Details ──
               _infoCard(context, [
                 _infoRow(context, Icons.flag_rounded, 'Goal', user?.primaryGoal.isNotEmpty == true ? user!.primaryGoal : '–', Colors.amber),
@@ -158,6 +274,114 @@ class ProfileScreen extends StatelessWidget {
                 _infoRow(context, Icons.person_rounded, 'Gender', user?.gender.isNotEmpty == true ? user!.gender : '–', Colors.pinkAccent),
               ]),
               const SizedBox(height: 24),
+
+              // ── Admin: Coupon Manager (only for admin) ──
+              FutureBuilder<IdTokenResult>(
+                future: firebaseUser?.getIdTokenResult(true),
+                builder: (context, snapshot) {
+                  final isAdmin = snapshot.data?.claims?['admin'] == true;
+                  if (!isAdmin) return const SizedBox.shrink();
+                  return Column(
+                    children: [
+                      GestureDetector(
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                              builder: (_) => const AdminCouponScreen()),
+                        ),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(18),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF1C1C00), Color(0xFF2A2A00)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: const Color(0xFFE5FF00).withOpacity(0.35),
+                              width: 1.2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFE5FF00).withOpacity(0.08),
+                                blurRadius: 20,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              // Icon container
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE5FF00).withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: const Color(0xFFE5FF00).withOpacity(0.25),
+                                  ),
+                                ),
+                                child: const Icon(
+                                  Icons.local_offer_rounded,
+                                  color: Color(0xFFE5FF00),
+                                  size: 22,
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              // Text
+                              const Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Text(
+                                          'Coupon Manager',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 15,
+                                          ),
+                                        ),
+                                        SizedBox(width: 8),
+                                        // Admin badge
+                                        _AdminBadge(),
+                                      ],
+                                    ),
+                                    SizedBox(height: 3),
+                                    Text(
+                                      'Create & manage promo codes',
+                                      style: TextStyle(
+                                        color: Colors.white38,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              // Arrow
+                              Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE5FF00).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(
+                                  Icons.arrow_forward_ios_rounded,
+                                  color: Color(0xFFE5FF00),
+                                  size: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                    ],
+                  );
+                },
+              ),
 
               // ── Logout ──
               SizedBox(
@@ -182,6 +406,7 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
+
             ],
           ),
         ),
@@ -238,6 +463,49 @@ class ProfileScreen extends StatelessWidget {
           Text(label, style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 14)),
           const Spacer(),
           Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Admin Badge ──────────────────────────────────────────────
+class _AdminBadge extends StatelessWidget {
+  const _AdminBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFE5FF00), Color(0xFFB8CC00)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFE5FF00).withOpacity(0.3),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.shield_rounded, color: Colors.black, size: 9),
+          SizedBox(width: 3),
+          Text(
+            'ADMIN',
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 9,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.8,
+            ),
+          ),
         ],
       ),
     );

@@ -31,7 +31,7 @@ class GeminiProgressService {
 
   static GenerativeModel _getModel() {
     _model ??= GenerativeModel(
-      model: 'gemini-1.5-flash-latest',
+      model: 'gemini-2.5-flash',
       apiKey: dotenv.env['GEMINI_API_KEY'] ?? '',
       generationConfig: GenerationConfig(
         temperature: 0.4,

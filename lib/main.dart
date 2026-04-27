@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -10,6 +9,7 @@ import 'screens/splash_screen.dart';
 import 'core/providers/user_provider.dart';
 import 'core/providers/workout_provider.dart';
 import 'core/providers/diet_provider.dart';
+import 'core/providers/subscription_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,6 +38,7 @@ class GainiqApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => DietProvider()..loadMockDietPlan()),
         ChangeNotifierProvider(create: (_) => WorkoutProvider()..loadMockPlans()),
+        ChangeNotifierProvider(create: (_) => SubscriptionProvider()),
         ChangeNotifierProxyProvider<DietProvider, UserProvider>(
           create: (_) => UserProvider(),
           update: (_, dietProvider, userProvider) {
