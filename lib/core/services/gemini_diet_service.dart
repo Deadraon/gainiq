@@ -13,8 +13,9 @@ class GeminiDietService {
       model: 'gemini-2.5-flash',
       apiKey: dotenv.env['GEMINI_API_KEY'] ?? '',
       generationConfig: GenerationConfig(
-        temperature: 0.9,
-        maxOutputTokens: 2048,
+        temperature: 0.3,
+        maxOutputTokens: 8192,
+        responseMimeType: 'application/json',
       ),
     );
     return _model!;
@@ -110,7 +111,12 @@ RULES:
 - INCLUDE SPECIFIC FOODS: Actively include healthy, modern Indian options like Oats, Muesli, Quinoa, Paneer, Sprouts, and diverse Chicken/Fish preparations.
 - RANDOMIZE: Every time you are called, suggest a DIFFERENT set of meals. Surprise the user with variety!
 
-Return ONLY valid JSON (no markdown):
+CRITICAL RULES:
+- You MUST fill ALL 4 meals with REAL food items. Every meal MUST have 2-3 foodItems.
+- NEVER leave any foodItems array empty. NEVER set calories/protein/carbs/fat to 0.
+- All values must be real numbers, NOT placeholders.
+
+Return ONLY valid JSON. No markdown, no code fences, no extra text. Replace the example foods below with YOUR OWN choices based on the user profile above:
 {
   "targetCalories": $targetCals,
   "targetProtein": $targetProtein,
@@ -124,20 +130,13 @@ Return ONLY valid JSON (no markdown):
       "time": "8:00 AM",
       "emoji": "☀️",
       "calories": 450,
-      "proteinGrams": 30,
-      "carbsGrams": 55,
-      "fatGrams": 12,
-      "cost": 38,
+      "proteinGrams": 28,
+      "carbsGrams": 52,
+      "fatGrams": 14,
+      "cost": 35,
       "foodItems": [
-        {
-          "name": "Moong Dal Chilla (3)",
-          "calories": 320,
-          "protein": 22,
-          "carbs": 38,
-          "fat": 6,
-          "serving": "3 chillas with green chutney",
-          "cost": 18
-        }
+        {"name": "Moong Dal Chilla (3 pcs)", "calories": 280, "protein": 18, "carbs": 32, "fat": 8, "serving": "3 chillas with chutney", "cost": 20},
+        {"name": "Banana Peanut Butter Shake", "calories": 170, "protein": 10, "carbs": 20, "fat": 6, "serving": "1 glass (300ml)", "cost": 15}
       ]
     },
     {
@@ -145,36 +144,47 @@ Return ONLY valid JSON (no markdown):
       "title": "Lunch",
       "time": "1:30 PM",
       "emoji": "🌤",
-      "calories": 0,
-      "proteinGrams": 0,
-      "carbsGrams": 0,
-      "fatGrams": 0,
-      "cost": 0,
-      "foodItems": []
+      "calories": 620,
+      "proteinGrams": 42,
+      "carbsGrams": 68,
+      "fatGrams": 18,
+      "cost": 50,
+      "foodItems": [
+        {"name": "Rajma Curry", "calories": 220, "protein": 14, "carbs": 30, "fat": 5, "serving": "1 bowl (200g)", "cost": 18},
+        {"name": "Brown Rice", "calories": 200, "protein": 5, "carbs": 42, "fat": 2, "serving": "1 cup cooked", "cost": 10},
+        {"name": "Paneer Bhurji", "calories": 200, "protein": 18, "carbs": 6, "fat": 12, "serving": "100g paneer", "cost": 22}
+      ]
     },
     {
       "id": "snack",
       "title": "Pre-Workout Snack",
       "time": "5:00 PM",
       "emoji": "⚡",
-      "calories": 0,
-      "proteinGrams": 0,
-      "carbsGrams": 0,
-      "fatGrams": 0,
-      "cost": 0,
-      "foodItems": []
+      "calories": 280,
+      "proteinGrams": 15,
+      "carbsGrams": 35,
+      "fatGrams": 8,
+      "cost": 25,
+      "foodItems": [
+        {"name": "Sprouts Chaat", "calories": 180, "protein": 12, "carbs": 22, "fat": 4, "serving": "1 bowl (150g)", "cost": 15},
+        {"name": "Roasted Makhana", "calories": 100, "protein": 3, "carbs": 13, "fat": 4, "serving": "1 cup", "cost": 10}
+      ]
     },
     {
       "id": "dinner",
       "title": "Dinner",
       "time": "8:30 PM",
       "emoji": "🌙",
-      "calories": 0,
-      "proteinGrams": 0,
-      "carbsGrams": 0,
-      "fatGrams": 0,
-      "cost": 0,
-      "foodItems": []
+      "calories": 550,
+      "proteinGrams": 38,
+      "carbsGrams": 55,
+      "fatGrams": 16,
+      "cost": 45,
+      "foodItems": [
+        {"name": "Dal Tadka", "calories": 180, "protein": 12, "carbs": 24, "fat": 5, "serving": "1 bowl (200g)", "cost": 12},
+        {"name": "Multigrain Roti", "calories": 120, "protein": 4, "carbs": 22, "fat": 3, "serving": "2 rotis", "cost": 8},
+        {"name": "Palak Paneer", "calories": 250, "protein": 16, "carbs": 9, "fat": 18, "serving": "1 bowl (200g)", "cost": 25}
+      ]
     }
   ]
 }
@@ -182,13 +192,21 @@ Return ONLY valid JSON (no markdown):
   }
 
   static DietPlanModel _parseDietPlan(String jsonText, UserModel user) {
-    final startIndex = jsonText.indexOf('{');
-    final endIndex = jsonText.lastIndexOf('}');
+    // Strip markdown code fences if present
+    String text = jsonText.replaceAll(RegExp(r'```json\s*'), '').replaceAll(RegExp(r'```\s*'), '').trim();
+    
+    final startIndex = text.indexOf('{');
+    final endIndex = text.lastIndexOf('}');
     if (startIndex == -1 || endIndex == -1) {
       throw Exception('Invalid JSON response: No object found.');
     }
     
-    final clean = jsonText.substring(startIndex, endIndex + 1);
+    String clean = text.substring(startIndex, endIndex + 1);
+    
+    // Fix trailing commas before ] or } (common Gemini mistake)
+    clean = clean.replaceAll(RegExp(r',\s*]'), ']');
+    clean = clean.replaceAll(RegExp(r',\s*}'), '}');
+    
     final Map<String, dynamic> data = jsonDecode(clean);
 
     final meals = (data['meals'] as List).map((m) {

@@ -14,6 +14,13 @@ class DietPlanScreen extends StatefulWidget {
 class _DietPlanScreenState extends State<DietPlanScreen> {
   int _expandedIdx = 0;
 
+  Widget _tagDot(Color color) => Container(
+        width: 5,
+        height: 5,
+        margin: const EdgeInsets.only(right: 4),
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      );
+
   @override
   Widget build(BuildContext context) {
     final dietProvider = context.watch<DietProvider>();
@@ -143,50 +150,118 @@ class _DietPlanScreenState extends State<DietPlanScreen> {
                     const SizedBox(height: 20),
 
                     // ── AI badge + Regenerate button ───────────────────
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE5FF00).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: const Color(0xFFE5FF00).withOpacity(0.3)),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.auto_awesome, color: Color(0xFFE5FF00), size: 13),
-                              const SizedBox(width: 5),
-                              Text(
-                                dietProvider.isAIGenerated
-                                    ? 'Gemini AI  •  Indian Foods  •  Budget Optimised'
-                                    : 'Smart Plan  •  Indian Foods  •  Budget Optimised',
-                                style: const TextStyle(
-                                    color: Color(0xFFE5FF00), fontSize: 11, fontWeight: FontWeight.w600),
-                              ),
-                            ],
+                    Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFFE5FF00).withOpacity(0.15),
+                            const Color(0xFFE5FF00).withOpacity(0.05),
+                            Colors.white.withOpacity(0.03),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0D0D0D).withOpacity(0.85),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: const Color(0xFFE5FF00).withOpacity(0.12),
                           ),
                         ),
-                        if (user != null)
-                          GestureDetector(
-                            onTap: () => context.read<DietProvider>().regenerate(user),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        child: Row(
+                          children: [
+                            // AI icon with glow
+                            Container(
+                              width: 28,
+                              height: 28,
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.06),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: Colors.white.withOpacity(0.12)),
+                                gradient: LinearGradient(
+                                  colors: [
+                                    const Color(0xFFE5FF00).withOpacity(0.25),
+                                    const Color(0xFFE5FF00).withOpacity(0.08),
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
                               ),
-                              child: const Row(
+                              child: const Icon(Icons.auto_awesome, color: Color(0xFFE5FF00), size: 14),
+                            ),
+                            const SizedBox(width: 10),
+                            // Labels
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Icon(Icons.refresh_rounded, color: Colors.white54, size: 13),
-                                  SizedBox(width: 4),
-                                  Text('Regenerate', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                                  Text(
+                                    dietProvider.isAIGenerated
+                                        ? 'Gemini AI Plan'
+                                        : 'Smart Plan',
+                                    style: const TextStyle(
+                                      color: Color(0xFFE5FF00),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                      letterSpacing: 0.3,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Row(
+                                    children: [
+                                      _tagDot(const Color(0xFF4CAF50)),
+                                      Text('Indian Foods',
+                                          style: TextStyle(color: Colors.white.withOpacity(0.45), fontSize: 10)),
+                                      Text('  •  ', style: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 10)),
+                                      _tagDot(const Color(0xFFFFB74D)),
+                                      Text('Budget Optimised',
+                                          style: TextStyle(color: Colors.white.withOpacity(0.45), fontSize: 10)),
+                                    ],
+                                  ),
                                 ],
                               ),
                             ),
-                          ),
-                      ],
+                            // Regenerate button
+                            if (user != null)
+                              GestureDetector(
+                                onTap: () => context.read<DietProvider>().regenerate(user),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        const Color(0xFFE5FF00).withOpacity(0.15),
+                                        const Color(0xFFE5FF00).withOpacity(0.06),
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: const Color(0xFFE5FF00).withOpacity(0.25)),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.refresh_rounded, color: Color(0xFFE5FF00), size: 14),
+                                      const SizedBox(width: 5),
+                                      const Text(
+                                        'Regenerate',
+                                        style: TextStyle(
+                                          color: Color(0xFFE5FF00),
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 0.3,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 16),
                   ],
