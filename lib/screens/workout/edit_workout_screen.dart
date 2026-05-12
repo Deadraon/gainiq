@@ -84,7 +84,7 @@ class _EditWorkoutScreenState extends State<EditWorkoutScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF141414),
+      backgroundColor: Theme.of(context).cardColor,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (_) => Padding(
@@ -96,12 +96,12 @@ class _EditWorkoutScreenState extends State<EditWorkoutScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(width: 36, height: 4,
-              decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
+              decoration: BoxDecoration(color: Theme.of(context).dividerColor.withOpacity(0.24), borderRadius: BorderRadius.circular(2))),
             const SizedBox(height: 16),
             Text(ex.name,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+                style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontWeight: FontWeight.bold, fontSize: 18)),
             Text(ex.targetMuscle,
-                style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13)),
+                style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 13)),
             const SizedBox(height: 20),
             Row(
               children: [
@@ -147,12 +147,12 @@ class _EditWorkoutScreenState extends State<EditWorkoutScreen> {
     return TextField(
       controller: ctrl,
       keyboardType: type,
-      style: const TextStyle(color: Colors.white),
+      style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Colors.white38, fontSize: 13),
+        labelStyle: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 13),
         filled: true,
-        fillColor: const Color(0xFF1F1F1F),
+        fillColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1F1F1F) : Colors.black.withOpacity(0.05),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -182,7 +182,7 @@ class _EditWorkoutScreenState extends State<EditWorkoutScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF141414),
+      backgroundColor: Theme.of(context).cardColor,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => StatefulBuilder(
@@ -202,20 +202,20 @@ class _EditWorkoutScreenState extends State<EditWorkoutScreen> {
                   child: Column(
                     children: [
                       Container(width: 36, height: 4,
-                        decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
+                        decoration: BoxDecoration(color: Theme.of(context).dividerColor.withOpacity(0.24), borderRadius: BorderRadius.circular(2))),
                       const SizedBox(height: 14),
-                      const Text('Add Exercise',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+                      Text('Add Exercise',
+                          style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontWeight: FontWeight.bold, fontSize: 18)),
                       const SizedBox(height: 12),
                       TextField(
                         onChanged: (v) => setModalState(() => _search = v),
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
                         decoration: InputDecoration(
                           hintText: 'Search exercise or muscle...',
-                          hintStyle: const TextStyle(color: Colors.white38),
-                          prefixIcon: const Icon(Icons.search, color: Colors.white38),
+                          hintStyle: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color),
+                          prefixIcon: Icon(Icons.search, color: Theme.of(context).iconTheme.color?.withOpacity(0.38)),
                           filled: true,
-                          fillColor: const Color(0xFF1F1F1F),
+                          fillColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1F1F1F) : Colors.black.withOpacity(0.05),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide.none,
@@ -245,11 +245,11 @@ class _EditWorkoutScreenState extends State<EditWorkoutScreen> {
                               color: Color(0xFFE5FF00), size: 18),
                         ),
                         title: Text(ex.name,
-                            style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+                            style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontSize: 14, fontWeight: FontWeight.w600)),
                         subtitle: Text(ex.targetMuscle,
-                            style: const TextStyle(color: Colors.white38, fontSize: 12)),
+                            style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 12)),
                         trailing: Text(ex.reps,
-                            style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                            style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 12)),
                         onTap: () {
                           _addExercise(ex);
                           Navigator.pop(ctx);
@@ -276,21 +276,21 @@ class _EditWorkoutScreenState extends State<EditWorkoutScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D0D),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D0D0D),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: Theme.of(context).iconTheme.color),
           onPressed: () => Navigator.pop(context),
         ),
         title: TextField(
           controller: _titleController,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 17),
-          decoration: const InputDecoration(
+          style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontWeight: FontWeight.bold, fontSize: 17),
+          decoration: InputDecoration(
             border: InputBorder.none,
             hintText: 'Workout Name',
-            hintStyle: TextStyle(color: Colors.white38),
+            hintStyle: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color),
           ),
         ),
         actions: [
@@ -311,16 +311,16 @@ class _EditWorkoutScreenState extends State<EditWorkoutScreen> {
             margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: const Color(0xFF161616),
+              color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.white.withOpacity(0.06)),
+              border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.06)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.info_outline_rounded, color: Colors.white38, size: 16),
+                Icon(Icons.info_outline_rounded, color: Theme.of(context).iconTheme.color?.withOpacity(0.38), size: 16),
                 const SizedBox(width: 8),
                 Text('${_exercises.length} exercises  •  Drag to reorder  •  Swipe to delete',
-                    style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12)),
+                    style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 12)),
               ],
             ),
           ),
@@ -333,10 +333,10 @@ class _EditWorkoutScreenState extends State<EditWorkoutScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.fitness_center_rounded, color: Colors.white12, size: 60),
+                        Icon(Icons.fitness_center_rounded, color: Theme.of(context).iconTheme.color?.withOpacity(0.12), size: 60),
                         const SizedBox(height: 12),
                         Text('No exercises yet',
-                            style: TextStyle(color: Colors.white.withOpacity(0.3))),
+                            style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color)),
                         const SizedBox(height: 8),
                         TextButton(
                           onPressed: _showAddExerciseSheet,
@@ -437,9 +437,9 @@ class _ExerciseEditTile extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: const Color(0xFF161616),
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.06)),
+          border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.06)),
         ),
         child: ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -449,16 +449,16 @@ class _ExerciseEditTile extends StatelessWidget {
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: Theme.of(context).brightness == Brightness.dark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.drag_handle_rounded, color: Colors.white38, size: 20),
+              child: Icon(Icons.drag_handle_rounded, color: Theme.of(context).iconTheme.color?.withOpacity(0.38), size: 20),
             ),
           ),
           title: Text(exercise.name,
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+              style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontWeight: FontWeight.w600, fontSize: 14)),
           subtitle: Text('${exercise.sets} sets  ×  ${exercise.reps} reps  •  ${exercise.targetMuscle}',
-              style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12)),
+              style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 12)),
           trailing: GestureDetector(
             onTap: onEdit,
             child: Container(

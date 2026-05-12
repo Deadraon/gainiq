@@ -25,8 +25,10 @@ class HomeScreen extends StatelessWidget {
     final totalCals = diet?.meals.fold(0, (sum, m) => sum + m.calories) ?? 0;
     final totalProtein = diet?.meals.fold(0, (sum, m) => sum + m.proteinGrams) ?? 0;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D0D),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -46,10 +48,10 @@ class HomeScreen extends StatelessWidget {
                           const Text('👋 ', style: TextStyle(fontSize: 18)),
                           Text(
                             'Hello, $firstName',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: Theme.of(context).textTheme.bodyLarge?.color,
                             ),
                           ),
                         ],
@@ -57,7 +59,7 @@ class HomeScreen extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         'Ready to crush today?',
-                        style: TextStyle(color: Colors.white.withOpacity(0.45), fontSize: 13),
+                        style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 13),
                       ),
                     ],
                   ),
@@ -137,7 +139,7 @@ class HomeScreen extends StatelessWidget {
               const SizedBox(height: 24),
 
               // ── NUTRITION ───────────────────────────────────────────
-              const _SectionHeader(title: 'Today\'s Nutrition'),
+              _SectionHeader(title: 'Today\'s Nutrition'),
               const SizedBox(height: 12),
               _NutritionCard(
                 consumed: totalCals,
@@ -151,7 +153,7 @@ class HomeScreen extends StatelessWidget {
 
               // ── MEALS PREVIEW ────────────────────────────────────────
               if (diet != null && diet.meals.isNotEmpty) ...[
-                const _SectionHeader(title: 'Meal Schedule'),
+                _SectionHeader(title: 'Meal Schedule'),
                 const SizedBox(height: 12),
                 ...diet.meals.take(2).map((m) => _MealPreviewTile(
                       title: m.title,
@@ -199,18 +201,19 @@ class _StreakCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final quote = _quotes[streak % _quotes.length];
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1E2200), Color(0xFF2E3800)],
+        gradient: LinearGradient(
+          colors: isDark ? [const Color(0xFF1E2200), const Color(0xFF2E3800)] : [const Color(0xFFFAFAEE), const Color(0xFFF0F0D0)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        border: Border.all(color: const Color(0xFFE5FF00).withOpacity(0.25), width: 1),
+        border: Border.all(color: isDark ? const Color(0xFFE5FF00).withOpacity(0.25) : const Color(0xFFE5FF00), width: 1),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -236,7 +239,7 @@ class _StreakCard extends StatelessWidget {
                 Text(
                   quote,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.55),
+                    color: isDark ? Colors.white.withOpacity(0.55) : Colors.black54,
                     fontStyle: FontStyle.italic,
                     fontSize: 12.5,
                     height: 1.5,
@@ -287,7 +290,7 @@ class _QuickStat extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF161616),
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: color.withOpacity(0.15), width: 1),
       ),
@@ -298,11 +301,11 @@ class _QuickStat extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             value,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Theme.of(context).textTheme.bodyLarge?.color),
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 2),
-          Text(label, style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11)),
+          Text(label, style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 11)),
         ],
       ),
     );
@@ -324,7 +327,7 @@ class _SectionHeader extends StatelessWidget {
       children: [
         Text(
           title,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 17),
+          style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontWeight: FontWeight.bold, fontSize: 17),
         ),
         if (onSeeAll != null)
           GestureDetector(
@@ -356,9 +359,9 @@ class _WorkoutCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: const Color(0xFF161616),
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withOpacity(0.06)),
+          border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.06)),
         ),
         child: Row(
           children: [
@@ -377,21 +380,21 @@ class _WorkoutCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
+                  Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Theme.of(context).textTheme.bodyLarge?.color)),
                   const SizedBox(height: 3),
-                  Text(subtitle, style: TextStyle(color: Colors.white.withOpacity(0.45), fontSize: 12)),
+                  Text(subtitle, style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 12)),
                   const SizedBox(height: 6),
                   Row(
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.07),
+                          color: Theme.of(context).brightness == Brightness.dark ? Colors.white.withOpacity(0.07) : Colors.black.withOpacity(0.05),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           '$exerciseCount Exercises',
-                          style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 11),
+                          style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 11),
                         ),
                       ),
                     ],
@@ -435,9 +438,9 @@ class _NutritionCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFF161616),
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
+        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.06)),
       ),
       child: Column(
         children: [
@@ -449,10 +452,10 @@ class _NutritionCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('$consumed kcal',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 22, color: Colors.white)),
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22, color: Theme.of(context).textTheme.bodyLarge?.color)),
                   const SizedBox(height: 2),
                   Text('of $target kcal target',
-                      style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12)),
+                      style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 12)),
                 ],
               ),
               // Ring
@@ -464,13 +467,13 @@ class _NutritionCard extends StatelessWidget {
                   children: [
                     CircularProgressIndicator(
                       value: pct,
-                      backgroundColor: Colors.white10,
+                      backgroundColor: Theme.of(context).brightness == Brightness.dark ? Colors.white10 : Colors.black12,
                       color: const Color(0xFFE5FF00),
                       strokeWidth: 5,
                     ),
                     Text(
                       '${(pct * 100).toInt()}%',
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color),
                     ),
                   ],
                 ),
@@ -482,7 +485,7 @@ class _NutritionCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(6),
             child: LinearProgressIndicator(
               value: pct,
-              backgroundColor: Colors.white10,
+              backgroundColor: Theme.of(context).brightness == Brightness.dark ? Colors.white10 : Colors.black12,
               color: const Color(0xFFE5FF00),
               minHeight: 6,
             ),
@@ -522,7 +525,7 @@ class _MacroPill extends StatelessWidget {
           child: Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13)),
         ),
         const SizedBox(height: 4),
-        Text(label, style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11)),
+        Text(label, style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 11)),
       ],
     );
   }
@@ -542,9 +545,9 @@ class _MealPreviewTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
       decoration: BoxDecoration(
-        color: const Color(0xFF161616),
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
+        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.06)),
       ),
       child: Row(
         children: [
@@ -552,19 +555,19 @@ class _MealPreviewTile extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
+              color: Theme.of(context).brightness == Brightness.dark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.restaurant_rounded, color: Colors.white54, size: 18),
+            child: Icon(Icons.restaurant_rounded, color: Theme.of(context).textTheme.bodyMedium?.color, size: 18),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white, fontSize: 14)),
+                Text(title, style: TextStyle(fontWeight: FontWeight.w600, color: Theme.of(context).textTheme.bodyLarge?.color, fontSize: 14)),
                 const SizedBox(height: 2),
-                Text(time, style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12)),
+                Text(time, style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 12)),
               ],
             ),
           ),
@@ -573,7 +576,7 @@ class _MealPreviewTile extends StatelessWidget {
             children: [
               Text('$calories kcal', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFE5FF00), fontSize: 13)),
               const SizedBox(height: 2),
-              Text('${protein}g protein', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11)),
+              Text('${protein}g protein', style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 11)),
             ],
           ),
         ],
@@ -595,12 +598,12 @@ class _EmptyCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF161616),
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
+        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.06)),
       ),
       child: Center(
-        child: Text(label, style: TextStyle(color: Colors.white.withOpacity(0.4))),
+        child: Text(label, style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color)),
       ),
     );
   }
@@ -615,13 +618,14 @@ class _ProfilePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.all(12),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFF141414),
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -659,12 +663,12 @@ class _ProfilePanel extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             user?.name ?? 'User',
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
+            style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontWeight: FontWeight.bold, fontSize: 20),
           ),
           const SizedBox(height: 2),
           Text(
             user?.primaryGoal != null ? '${user!.primaryGoal} • ${user!.experienceLevel}' : '',
-            style: TextStyle(color: Colors.white.withOpacity(0.45), fontSize: 13),
+            style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 13),
           ),
           const SizedBox(height: 24),
 
@@ -672,13 +676,13 @@ class _ProfilePanel extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _statItem('${user?.age ?? '–'}', 'Age'),
-              _vDivider(),
-              _statItem('${user?.weight?.toInt() ?? '–'} kg', 'Weight'),
-              _vDivider(),
-              _statItem('${user?.height?.toInt() ?? '–'} cm', 'Height'),
-              _vDivider(),
-              _statItem('${user?.streak ?? 0}🔥', 'Streak'),
+              _statItem(context, '${user?.age ?? '–'}', 'Age'),
+              _vDivider(context),
+              _statItem(context, '${user?.weight?.toInt() ?? '–'} kg', 'Weight'),
+              _vDivider(context),
+              _statItem(context, '${user?.height?.toInt() ?? '–'} cm', 'Height'),
+              _vDivider(context),
+              _statItem(context, '${user?.streak ?? 0}🔥', 'Streak'),
             ],
           ),
           const SizedBox(height: 20),
@@ -686,21 +690,21 @@ class _ProfilePanel extends StatelessWidget {
           const SizedBox(height: 12),
 
           // Info rows
-          _profileRow(Icons.flag_rounded, 'Goal', user?.primaryGoal ?? '–', Colors.amber),
-          _profileRow(Icons.restaurant_rounded, 'Diet', user?.dietPreference ?? '–', Colors.green),
-          _profileRow(Icons.currency_rupee_rounded, 'Budget', user?.monthlyBudget != null ? '₹${user!.monthlyBudget.toInt()}/mo' : '–', const Color(0xFFE5FF00)),
-          _profileRow(Icons.location_on_rounded, 'Trains At', user?.workoutLocation ?? '–', Colors.blueAccent),
+          _profileRow(context, Icons.flag_rounded, 'Goal', user?.primaryGoal ?? '–', Colors.amber),
+          _profileRow(context, Icons.restaurant_rounded, 'Diet', user?.dietPreference ?? '–', Colors.green),
+          _profileRow(context, Icons.currency_rupee_rounded, 'Budget', user?.monthlyBudget != null ? '₹${user!.monthlyBudget.toInt()}/mo' : '–', const Color(0xFFE5FF00)),
+          _profileRow(context, Icons.location_on_rounded, 'Trains At', user?.workoutLocation ?? '–', Colors.blueAccent),
           const SizedBox(height: 16),
 
           // Edit note
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.info_outline, color: Colors.white.withOpacity(0.3), size: 14),
+              Icon(Icons.info_outline, color: Theme.of(context).textTheme.bodyMedium?.color, size: 14),
               const SizedBox(width: 6),
               Text(
                 'Profile editing coming soon',
-                style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 12),
+                style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 12),
               ),
             ],
           ),
@@ -710,28 +714,28 @@ class _ProfilePanel extends StatelessWidget {
     );
   }
 
-  Widget _statItem(String value, String label) {
+  Widget _statItem(BuildContext context, String value, String label) {
     return Column(
       children: [
-        Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+        Text(value, style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontWeight: FontWeight.bold, fontSize: 15)),
         const SizedBox(height: 3),
-        Text(label, style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11)),
+        Text(label, style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 11)),
       ],
     );
   }
 
-  Widget _vDivider() => Container(height: 28, width: 1, color: Colors.white10);
+  Widget _vDivider(BuildContext context) => Container(height: 28, width: 1, color: Theme.of(context).brightness == Brightness.dark ? Colors.white10 : Colors.black12);
 
-  Widget _profileRow(IconData icon, String label, String value, Color color) {
+  Widget _profileRow(BuildContext context, IconData icon, String label, String value, Color color) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
           Icon(icon, color: color, size: 18),
           const SizedBox(width: 12),
-          Text(label, style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 14)),
+          Text(label, style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 14)),
           const Spacer(),
-          Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+          Text(value, style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontWeight: FontWeight.w600, fontSize: 14)),
         ],
       ),
     );

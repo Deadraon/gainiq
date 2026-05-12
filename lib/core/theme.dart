@@ -8,6 +8,71 @@ class AppTheme {
   static const Color textPrimary = Colors.white;
   static const Color textSecondary = Color(0xFF888888);
 
+  static const Color lightBackgroundColor = Color(0xFFF0F0F3); // Off-white
+  static const Color lightCardColor = Colors.white;
+  static const Color lightTextPrimary = Color(0xFF111111);
+  static const Color lightTextSecondary = Color(0xFF666666);
+
+  static ThemeData get lightTheme {
+    return ThemeData(
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: lightBackgroundColor,
+      primaryColor: primaryColor,
+      canvasColor: lightBackgroundColor,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: lightBackgroundColor,
+        elevation: 0,
+        centerTitle: true,
+        iconTheme: IconThemeData(color: lightTextPrimary),
+        titleTextStyle: TextStyle(color: lightTextPrimary, fontSize: 20, fontWeight: FontWeight.bold),
+      ),
+      textTheme: GoogleFonts.interTextTheme(
+        ThemeData.light().textTheme.copyWith(
+          displayLarge: const TextStyle(color: lightTextPrimary, fontWeight: FontWeight.w800, letterSpacing: -1),
+          displayMedium: const TextStyle(color: lightTextPrimary, fontWeight: FontWeight.bold, letterSpacing: -0.5),
+          bodyLarge: const TextStyle(color: lightTextPrimary),
+          bodyMedium: const TextStyle(color: lightTextSecondary),
+        ),
+      ),
+      colorScheme: const ColorScheme.light(
+        primary: primaryColor,
+        surface: lightCardColor,
+        background: lightBackgroundColor,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: primaryColor,
+          foregroundColor: Colors.black,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          textStyle: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ),
+      cardTheme: CardThemeData(
+        color: lightCardColor,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+      ),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: lightCardColor,
+        selectedItemColor: Colors.black,
+        unselectedItemColor: lightTextSecondary,
+        type: BottomNavigationBarType.fixed,
+        elevation: 0,
+      ),
+      iconTheme: const IconThemeData(color: lightTextPrimary),
+    );
+  }
+
   static ThemeData get darkTheme {
     return ThemeData(
       brightness: Brightness.dark,

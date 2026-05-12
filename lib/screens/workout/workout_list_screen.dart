@@ -200,7 +200,7 @@ class WorkoutListScreen extends StatelessWidget {
                             fontSize: 15,
                             color: isActive
                                 ? Theme.of(context).primaryColor
-                                : Colors.white,
+                                : Theme.of(context).textTheme.bodyLarge?.color,
                           )),
                       if (isActive) ...[
                         const SizedBox(width: 8),
@@ -228,7 +228,7 @@ class WorkoutListScreen extends StatelessWidget {
                         style: Theme.of(context)
                             .textTheme
                             .bodyMedium
-                            ?.copyWith(fontSize: 11, color: Colors.white38)),
+                            ?.copyWith(fontSize: 11, color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.5))),
                   ],
                 ],
               ),
@@ -243,7 +243,7 @@ class WorkoutListScreen extends StatelessWidget {
                         fontSize: 20,
                         color: isActive
                             ? Theme.of(context).primaryColor
-                            : Colors.white70)),
+                            : Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.7))),
                 Text('exs', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 11)),
                 const SizedBox(height: 8),
                 GestureDetector(
@@ -253,16 +253,16 @@ class WorkoutListScreen extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.07),
+                      color: Theme.of(context).dividerColor.withOpacity(0.07),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.white12),
+                      border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.12)),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.edit_rounded, size: 12, color: Colors.white54),
-                        SizedBox(width: 4),
-                        Text('Edit', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                        Icon(Icons.edit_rounded, size: 12, color: Theme.of(context).iconTheme.color?.withOpacity(0.54)),
+                        const SizedBox(width: 4),
+                        Text('Edit', style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.54), fontSize: 11)),
                       ],
                     ),
                   ),

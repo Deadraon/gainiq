@@ -55,10 +55,10 @@ class _AdminCouponScreenState extends State<AdminCouponScreen>
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
-        title: const Text('Delete Coupon', style: TextStyle(color: Colors.white)),
+        backgroundColor: Theme.of(context).cardColor,
+        title: Text('Delete Coupon', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
         content: Text('Delete "${c.code}"? This cannot be undone.',
-            style: const TextStyle(color: Colors.white70)),
+            style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color)),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
@@ -81,10 +81,10 @@ class _AdminCouponScreenState extends State<AdminCouponScreen>
     final inactive = _coupons.where((c) => !c.isActive || c.isExpired || c.isExhausted).toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D0D),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D0D0D),
-        foregroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        foregroundColor: Theme.of(context).iconTheme.color,
         title: const Text('Coupon Manager',
             style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
@@ -157,7 +157,7 @@ class _CouponList extends StatelessWidget {
       return Center(
         child: Text(emptyMessage,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.white38, fontSize: 14)),
+            style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 14)),
       );
     }
     return ListView.separated(
@@ -192,12 +192,12 @@ class _CouponCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF141414),
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: coupon.canRedeem
               ? _planColor.withOpacity(0.2)
-              : Colors.white.withOpacity(0.05),
+              : Theme.of(context).dividerColor.withOpacity(0.05),
         ),
       ),
       child: Padding(
@@ -278,19 +278,19 @@ class _CouponCard extends StatelessWidget {
             if (coupon.description.isNotEmpty) ...[
               const SizedBox(height: 8),
               Text(coupon.description,
-                  style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                  style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 12)),
             ],
             const SizedBox(height: 12),
-            const Divider(color: Colors.white10, height: 1),
+            Divider(color: Theme.of(context).dividerColor.withOpacity(0.1), height: 1),
             const SizedBox(height: 10),
             // Stats row
             Row(
               children: [
-                _stat(Icons.people_rounded, '${coupon.usedCount}/${coupon.maxUses}', 'Uses'),
+                _stat(context, Icons.people_rounded, '${coupon.usedCount}/${coupon.maxUses}', 'Uses'),
                 const SizedBox(width: 20),
-                _stat(Icons.calendar_today_rounded, expiry, 'Expires'),
+                _stat(context, Icons.calendar_today_rounded, expiry, 'Expires'),
                 const SizedBox(width: 20),
-                _stat(Icons.timer_rounded, '${coupon.durationDays}d', 'Duration'),
+                _stat(context, Icons.timer_rounded, '${coupon.durationDays}d', 'Duration'),
               ],
             ),
             const SizedBox(height: 12),
@@ -339,23 +339,23 @@ class _CouponCard extends StatelessWidget {
     );
   }
 
-  Widget _stat(IconData icon, String value, String label) => Column(
+  Widget _stat(BuildContext context, IconData icon, String value, String label) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, color: Colors.white38, size: 12),
+              Icon(icon, color: Theme.of(context).iconTheme.color?.withOpacity(0.38), size: 12),
               const SizedBox(width: 4),
               Text(value,
-                  style: const TextStyle(
-                      color: Colors.white,
+                  style: TextStyle(
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
                       fontWeight: FontWeight.bold,
                       fontSize: 12)),
             ],
           ),
           Text(label,
               style:
-                  const TextStyle(color: Colors.white38, fontSize: 10)),
+                  TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 10)),
         ],
       );
 }
@@ -440,9 +440,9 @@ class _CreateCouponSheetState extends State<_CreateCouponSheet> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF141414),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: EdgeInsets.only(
         left: 20,
@@ -460,14 +460,14 @@ class _CreateCouponSheetState extends State<_CreateCouponSheet> {
               child: Container(
                 width: 40, height: 4,
                 decoration: BoxDecoration(
-                    color: Colors.white12,
+                    color: Theme.of(context).dividerColor.withOpacity(0.24),
                     borderRadius: BorderRadius.circular(2)),
               ),
             ),
             const SizedBox(height: 20),
-            const Text('Create Coupon',
+            Text('Create Coupon',
                 style: TextStyle(
-                    color: Colors.white,
+                    color: Theme.of(context).textTheme.bodyLarge?.color,
                     fontSize: 20,
                     fontWeight: FontWeight.bold)),
             const SizedBox(height: 20),
@@ -488,7 +488,7 @@ class _CreateCouponSheetState extends State<_CreateCouponSheet> {
                   onPressed: () => setState(
                       () => _codeCtrl.text = _generateCode()),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1E1E1E),
+                    backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1E1E) : Colors.black.withOpacity(0.05),
                     foregroundColor: const Color(0xFFE5FF00),
                     padding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 16),
@@ -574,13 +574,13 @@ class _CreateCouponSheetState extends State<_CreateCouponSheet> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E1E1E),
+                  color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1E1E) : Colors.black.withOpacity(0.05),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.calendar_today_rounded,
-                        color: Colors.white38, size: 16),
+                    Icon(Icons.calendar_today_rounded,
+                        color: Theme.of(context).iconTheme.color?.withOpacity(0.38), size: 16),
                     const SizedBox(width: 10),
                     Text(
                       _expiresAt != null
@@ -596,8 +596,8 @@ class _CreateCouponSheetState extends State<_CreateCouponSheet> {
                     if (_expiresAt != null)
                       GestureDetector(
                         onTap: () => setState(() => _expiresAt = null),
-                        child: const Icon(Icons.close_rounded,
-                            color: Colors.white38, size: 16),
+                        child: Icon(Icons.close_rounded,
+                            color: Theme.of(context).iconTheme.color?.withOpacity(0.38), size: 16),
                       ),
                   ],
                 ),
@@ -639,18 +639,18 @@ class _CreateCouponSheetState extends State<_CreateCouponSheet> {
     required String label,
     required String hint,
     TextCapitalization caps = TextCapitalization.none,
-  }) =>
-      TextField(
+  }) {
+      return TextField(
         controller: controller,
         textCapitalization: caps,
-        style: const TextStyle(color: Colors.white),
+        style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: const TextStyle(color: Colors.white38),
+          labelStyle: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color),
           hintText: hint,
-          hintStyle: const TextStyle(color: Colors.white24),
+          hintStyle: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.24)),
           filled: true,
-          fillColor: const Color(0xFF1E1E1E),
+          fillColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1E1E) : Colors.black.withOpacity(0.05),
           border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none),
@@ -658,10 +658,11 @@ class _CreateCouponSheetState extends State<_CreateCouponSheet> {
               const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         ),
       );
+  }
 
   Widget _label(String text) => Text(text,
-      style: const TextStyle(
-          color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w500));
+      style: TextStyle(
+          color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 12, fontWeight: FontWeight.w500));
 
   Widget _planChip(String label, CouponPlan p, Color color) {
     final sel = _plan == p;
@@ -672,16 +673,16 @@ class _CreateCouponSheetState extends State<_CreateCouponSheet> {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: sel ? color.withOpacity(0.12) : const Color(0xFF1E1E1E),
+            color: sel ? color.withOpacity(0.12) : Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1E1E) : Colors.black.withOpacity(0.05),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-                color: sel ? color : Colors.white12,
+                color: sel ? color : Theme.of(context).dividerColor.withOpacity(0.12),
                 width: sel ? 1.5 : 1),
           ),
           child: Text(label,
               textAlign: TextAlign.center,
               style: TextStyle(
-                  color: sel ? color : Colors.white38,
+                  color: sel ? color : Theme.of(context).textTheme.bodyMedium?.color,
                   fontWeight: FontWeight.bold,
                   fontSize: 13)),
         ),

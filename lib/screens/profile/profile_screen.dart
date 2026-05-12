@@ -6,7 +6,9 @@ import '../../core/providers/subscription_provider.dart';
 import '../auth/auth_screen.dart';
 import '../subscription/paywall_screen.dart';
 import '../subscription/admin_coupon_screen.dart';
+import '../admin/admin_users_screen.dart';
 import 'edit_profile_screen.dart';
+import '../../core/providers/theme_provider.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -21,23 +23,36 @@ class ProfileScreen extends StatelessWidget {
     final email = firebaseUser?.email ?? '';
     final initials =
         (user?.name.isNotEmpty == true) ? user!.name[0].toUpperCase() : '?';
+    final themeProvider = context.watch<ThemeProvider>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Check admin claim from token — FutureBuilder so we read live token
 
     if (userProvider.isLoading) {
-      return const Scaffold(
-        backgroundColor: Color(0xFF0D0D0D),
-        body: Center(child: CircularProgressIndicator(color: Color(0xFFE5FF00))),
+      return Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: const Center(child: CircularProgressIndicator(color: Color(0xFFE5FF00))),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D0D),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const SizedBox(width: 48), // Balance for centering
+                  Text('Profile', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
+                  IconButton(
+                    icon: Icon(themeProvider.isDarkMode ? Icons.dark_mode : Icons.light_mode, color: Theme.of(context).iconTheme.color),
+                    onPressed: () => themeProvider.toggleTheme(!themeProvider.isDarkMode),
+                  ),
+                ],
+              ),
               const SizedBox(height: 12),
 
               // ── Avatar + Name ──
@@ -77,7 +92,7 @@ class ProfileScreen extends StatelessWidget {
                       width: 28,
                       height: 28,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1A1A1A),
+                        color: Theme.of(context).cardColor,
                         shape: BoxShape.circle,
                         border: Border.all(color: const Color(0xFFE5FF00), width: 1.5),
                       ),
@@ -90,10 +105,10 @@ class ProfileScreen extends StatelessWidget {
 
               Text(
                 user?.name.isNotEmpty == true ? user!.name : 'Set your name',
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 22),
+                style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontWeight: FontWeight.bold, fontSize: 22),
               ),
               const SizedBox(height: 4),
-              Text(email, style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13)),
+              Text(email, style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 13)),
               const SizedBox(height: 10),
 
               // ── Subscription Badge ──
@@ -128,7 +143,7 @@ class ProfileScreen extends StatelessWidget {
                         style: TextStyle(
                           color: subscription.isPaid
                               ? (subscription.isAdvance ? Colors.black : Colors.white)
-                              : Colors.white70,
+                              : (isDark ? Colors.white70 : Colors.black87),
                           fontWeight: FontWeight.bold,
                           fontSize: 12,
                         ),
@@ -220,22 +235,22 @@ class ProfileScreen extends StatelessWidget {
                       children: [
                         const Text('⚡', style: TextStyle(fontSize: 28)),
                         const SizedBox(width: 14),
-                        const Expanded(
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
+                              const Text(
                                 'Unlock Premium Features',
                                 style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14),
                               ),
-                              SizedBox(height: 2),
+                              const SizedBox(height: 2),
                               Text(
                                 'Pro from ₹199/mo · Advance from ₹299/mo',
                                 style: TextStyle(
-                                    color: Colors.white54, fontSize: 11),
+                                    color: isDark ? Colors.white54 : Colors.white70, fontSize: 11),
                               ),
                             ],
                           ),
@@ -292,14 +307,14 @@ class ProfileScreen extends StatelessWidget {
                           width: double.infinity,
                           padding: const EdgeInsets.all(18),
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF1C1C00), Color(0xFF2A2A00)],
+                            gradient: LinearGradient(
+                              colors: isDark ? [const Color(0xFF1C1C00), const Color(0xFF2A2A00)] : [const Color(0xFFFAFAEE), const Color(0xFFF0F0D0)],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
                             borderRadius: BorderRadius.circular(18),
                             border: Border.all(
-                              color: const Color(0xFFE5FF00).withOpacity(0.35),
+                              color: isDark ? const Color(0xFFE5FF00).withOpacity(0.35) : const Color(0xFFE5FF00).withOpacity(0.8),
                               width: 1.2,
                             ),
                             boxShadow: [
@@ -330,7 +345,7 @@ class ProfileScreen extends StatelessWidget {
                               ),
                               const SizedBox(width: 14),
                               // Text
-                              const Expanded(
+                              Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -339,21 +354,116 @@ class ProfileScreen extends StatelessWidget {
                                         Text(
                                           'Coupon Manager',
                                           style: TextStyle(
-                                            color: Colors.white,
+                                            color: isDark ? Colors.white : Colors.black87,
                                             fontWeight: FontWeight.bold,
                                             fontSize: 15,
                                           ),
                                         ),
-                                        SizedBox(width: 8),
+                                        const SizedBox(width: 8),
                                         // Admin badge
-                                        _AdminBadge(),
+                                        const _AdminBadge(),
                                       ],
                                     ),
-                                    SizedBox(height: 3),
+                                    const SizedBox(height: 3),
                                     Text(
                                       'Create & manage promo codes',
                                       style: TextStyle(
-                                        color: Colors.white38,
+                                        color: isDark ? Colors.white38 : Colors.black54,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              // Arrow
+                              Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE5FF00).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(
+                                  Icons.arrow_forward_ios_rounded,
+                                  color: Color(0xFFE5FF00),
+                                  size: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      GestureDetector(
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                              builder: (_) => const AdminUsersScreen()),
+                        ),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(18),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: isDark ? [const Color(0xFF1C1C00), const Color(0xFF2A2A00)] : [const Color(0xFFFAFAEE), const Color(0xFFF0F0D0)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: isDark ? const Color(0xFFE5FF00).withOpacity(0.35) : const Color(0xFFE5FF00).withOpacity(0.8),
+                              width: 1.2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFE5FF00).withOpacity(0.08),
+                                blurRadius: 20,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              // Icon container
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE5FF00).withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: const Color(0xFFE5FF00).withOpacity(0.25),
+                                  ),
+                                ),
+                                child: const Icon(
+                                  Icons.people_alt_rounded,
+                                  color: Color(0xFFE5FF00),
+                                  size: 22,
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              // Text
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Text(
+                                          'User Management',
+                                          style: TextStyle(
+                                            color: isDark ? Colors.white : Colors.black87,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 15,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        // Admin badge
+                                        const _AdminBadge(),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      'View users and revoke plans',
+                                      style: TextStyle(
+                                        color: isDark ? Colors.white38 : Colors.black54,
                                         fontSize: 12,
                                       ),
                                     ),
@@ -418,7 +528,7 @@ class ProfileScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF161616),
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: color.withOpacity(0.2)),
       ),
@@ -426,18 +536,19 @@ class ProfileScreen extends StatelessWidget {
         children: [
           Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 16)),
           const SizedBox(height: 4),
-          Text(label, style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11)),
+          Text(label, style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 11)),
         ],
       ),
     );
   }
 
   Widget _infoCard(BuildContext context, List<Widget> rows) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF161616),
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
+        border: Border.all(color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06)),
       ),
       child: Column(
         children: rows.asMap().entries.map((e) {
@@ -445,7 +556,7 @@ class ProfileScreen extends StatelessWidget {
           return Column(
             children: [
               e.value,
-              if (!isLast) const Divider(height: 1, color: Colors.white10, indent: 16, endIndent: 16),
+              if (!isLast) Divider(height: 1, color: isDark ? Colors.white10 : Colors.black12, indent: 16, endIndent: 16),
             ],
           );
         }).toList(),
@@ -460,9 +571,9 @@ class ProfileScreen extends StatelessWidget {
         children: [
           Icon(icon, size: 18, color: color),
           const SizedBox(width: 12),
-          Text(label, style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 14)),
+          Text(label, style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 14)),
           const Spacer(),
-          Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+          Text(value, style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontWeight: FontWeight.w600, fontSize: 14)),
         ],
       ),
     );

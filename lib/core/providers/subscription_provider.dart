@@ -13,6 +13,11 @@ class SubscriptionProvider with ChangeNotifier {
   bool get isAdvance => _subscription.isAdvance;
   bool get isPaid => _subscription.isPaid;
 
+  // ── Current User Info (for payment gateway) ────────────────────
+  String? get currentUserId => FirebaseAuth.instance.currentUser?.uid;
+  String? get currentUserEmail => FirebaseAuth.instance.currentUser?.email;
+  String? get currentUserPhone => FirebaseAuth.instance.currentUser?.phoneNumber;
+
   SubscriptionProvider() {
     _listenToSubscription();
   }

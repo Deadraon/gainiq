@@ -109,7 +109,7 @@ class _LiveWorkoutScreenState extends State<LiveWorkoutScreen>
     final totalSets = exercises.fold<int>(0, (sum, e) => sum + e.sets);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D0D),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Column(
         children: [
           // ── HEADER ──────────────────────────────────────────────────
@@ -121,9 +121,9 @@ class _LiveWorkoutScreenState extends State<LiveWorkoutScreen>
           // ── EXERCISE LIST ────────────────────────────────────────────
           Expanded(
             child: exercises.isEmpty
-                ? const Center(
+                ? Center(
                     child: Text('No exercises found',
-                        style: TextStyle(color: Colors.white54)))
+                        style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color)))
                 : ListView.builder(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                     itemCount: exercises.length,
@@ -141,7 +141,7 @@ class _LiveWorkoutScreenState extends State<LiveWorkoutScreen>
 
   Widget _buildHeader(BuildContext context, String title, double progress) {
     return Container(
-      color: const Color(0xFF0D0D0D),
+      color: Theme.of(context).scaffoldBackgroundColor,
       child: SafeArea(
         bottom: false,
         child: Column(
@@ -151,16 +151,16 @@ class _LiveWorkoutScreenState extends State<LiveWorkoutScreen>
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                        color: Colors.white, size: 20),
+                    icon: Icon(Icons.arrow_back_ios_new_rounded,
+                        color: Theme.of(context).iconTheme.color, size: 20),
                     onPressed: () => _confirmEnd(context),
                   ),
                   Expanded(
                     child: Column(
                       children: [
                         Text(title,
-                            style: const TextStyle(
-                                color: Colors.white,
+                            style: TextStyle(
+                                color: Theme.of(context).textTheme.bodyLarge?.color,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16),
                             overflow: TextOverflow.ellipsis),
@@ -187,13 +187,13 @@ class _LiveWorkoutScreenState extends State<LiveWorkoutScreen>
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1A1A1A),
+                        color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1A1A1A) : Colors.black.withOpacity(0.05),
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white12),
+                        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.12)),
                       ),
                       child: Icon(
                         _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                        color: Colors.white,
+                        color: Theme.of(context).iconTheme.color,
                         size: 22,
                       ),
                     ),
@@ -274,12 +274,12 @@ class _LiveWorkoutScreenState extends State<LiveWorkoutScreen>
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF141414),
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: allDone
               ? const Color(0xFFE5FF00).withOpacity(0.4)
-              : Colors.white.withOpacity(0.06),
+              : Theme.of(context).dividerColor.withOpacity(0.06),
           width: allDone ? 1.5 : 1,
         ),
       ),
@@ -296,12 +296,12 @@ class _LiveWorkoutScreenState extends State<LiveWorkoutScreen>
                   decoration: BoxDecoration(
                     color: allDone
                         ? const Color(0xFFE5FF00).withOpacity(0.15)
-                        : Colors.white.withOpacity(0.05),
+                        : Theme.of(context).brightness == Brightness.dark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
                     allDone ? Icons.check_rounded : Icons.fitness_center_rounded,
-                    color: allDone ? const Color(0xFFE5FF00) : Colors.white38,
+                    color: allDone ? const Color(0xFFE5FF00) : Theme.of(context).iconTheme.color?.withOpacity(0.38),
                     size: 18,
                   ),
                 ),
@@ -316,12 +316,12 @@ class _LiveWorkoutScreenState extends State<LiveWorkoutScreen>
                             fontSize: 15,
                             color: allDone
                                 ? const Color(0xFFE5FF00)
-                                : Colors.white,
+                                : Theme.of(context).textTheme.bodyLarge?.color,
                           )),
                       if (exercise.targetMuscle.isNotEmpty)
                         Text(exercise.targetMuscle,
                             style: TextStyle(
-                                color: Colors.white.withOpacity(0.4),
+                                color: Theme.of(context).textTheme.bodyMedium?.color,
                                 fontSize: 12)),
                     ],
                   ),
@@ -329,13 +329,13 @@ class _LiveWorkoutScreenState extends State<LiveWorkoutScreen>
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.06),
+                    color: Theme.of(context).brightness == Brightness.dark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.05),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     '$completedCount / ${exercise.sets} sets',
                     style: TextStyle(
-                        color: Colors.white.withOpacity(0.5), fontSize: 11),
+                        color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 11),
                   ),
                 ),
               ],
@@ -358,7 +358,7 @@ class _LiveWorkoutScreenState extends State<LiveWorkoutScreen>
             ),
           ),
           const SizedBox(height: 6),
-          const Divider(height: 1, color: Colors.white10),
+          Divider(height: 1, color: Theme.of(context).dividerColor.withOpacity(0.1)),
 
           // Set rows
           ...List.generate(exercise.sets, (setIdx) =>
@@ -370,7 +370,7 @@ class _LiveWorkoutScreenState extends State<LiveWorkoutScreen>
   }
 
   TextStyle _headerStyle() => TextStyle(
-    color: Colors.white.withOpacity(0.3),
+    color: Theme.of(context).textTheme.bodyMedium?.color,
     fontSize: 10,
     fontWeight: FontWeight.w600,
     letterSpacing: 0.8,
@@ -394,14 +394,14 @@ class _LiveWorkoutScreenState extends State<LiveWorkoutScreen>
             decoration: BoxDecoration(
               color: isDone
                   ? const Color(0xFFE5FF00)
-                  : Colors.white.withOpacity(0.08),
+                  : Theme.of(context).brightness == Brightness.dark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.05),
               shape: BoxShape.circle,
             ),
             child: Center(
               child: Text(
                 '${setIdx + 1}',
                 style: TextStyle(
-                  color: isDone ? Colors.black : Colors.white54,
+                  color: isDone ? Colors.black : Theme.of(context).textTheme.bodyMedium?.color,
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
                 ),
@@ -414,7 +414,7 @@ class _LiveWorkoutScreenState extends State<LiveWorkoutScreen>
           Expanded(
             child: Text(
               'Prev: —',
-              style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 12),
+              style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 12),
             ),
           ),
 
@@ -446,17 +446,17 @@ class _LiveWorkoutScreenState extends State<LiveWorkoutScreen>
               decoration: BoxDecoration(
                 color: isDone
                     ? const Color(0xFFE5FF00)
-                    : Colors.white.withOpacity(0.06),
+                    : Theme.of(context).brightness == Brightness.dark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                   color: isDone
                       ? const Color(0xFFE5FF00)
-                      : Colors.white.withOpacity(0.15),
+                      : Theme.of(context).dividerColor.withOpacity(0.15),
                 ),
               ),
               child: Icon(
                 isDone ? Icons.check_rounded : Icons.check_rounded,
-                color: isDone ? Colors.black : Colors.white24,
+                color: isDone ? Colors.black : Theme.of(context).iconTheme.color?.withOpacity(0.24),
                 size: 18,
               ),
             ),
@@ -481,18 +481,18 @@ class _LiveWorkoutScreenState extends State<LiveWorkoutScreen>
         textAlign: TextAlign.center,
         enabled: !isDone,
         style: TextStyle(
-          color: isDone ? const Color(0xFFE5FF00) : Colors.white,
+          color: isDone ? const Color(0xFFE5FF00) : Theme.of(context).textTheme.bodyLarge?.color,
           fontWeight: FontWeight.w600,
           fontSize: 14,
         ),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: TextStyle(color: Colors.white.withOpacity(0.25), fontSize: 12),
+          hintStyle: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 12),
           isDense: true,
           filled: true,
           fillColor: isDone
               ? const Color(0xFFE5FF00).withOpacity(0.08)
-              : Colors.white.withOpacity(0.05),
+              : Theme.of(context).brightness == Brightness.dark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
             borderSide: BorderSide.none,
@@ -510,9 +510,9 @@ class _LiveWorkoutScreenState extends State<LiveWorkoutScreen>
   Widget _buildBottomBar(BuildContext context, int done, int total) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
-      decoration: const BoxDecoration(
-        color: Color(0xFF0D0D0D),
-        border: Border(top: BorderSide(color: Colors.white10)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        border: Border(top: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1))),
       ),
       child: Row(
         children: [
@@ -528,7 +528,7 @@ class _LiveWorkoutScreenState extends State<LiveWorkoutScreen>
                         fontSize: 13)),
                 Text('Time: ${_formatTime(_seconds)}',
                     style: TextStyle(
-                        color: Colors.white.withOpacity(0.4), fontSize: 12)),
+                        color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 12)),
               ],
             ),
           ),
@@ -554,7 +554,7 @@ class _LiveWorkoutScreenState extends State<LiveWorkoutScreen>
   void _confirmEnd(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF141414),
+      backgroundColor: Theme.of(context).cardColor,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (_) => Padding(
@@ -562,13 +562,13 @@ class _LiveWorkoutScreenState extends State<LiveWorkoutScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(width: 36, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
+            Container(width: 36, height: 4, decoration: BoxDecoration(color: Theme.of(context).dividerColor.withOpacity(0.24), borderRadius: BorderRadius.circular(2))),
             const SizedBox(height: 20),
-            const Text('End Workout?',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20)),
+            Text('End Workout?',
+                style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontWeight: FontWeight.bold, fontSize: 20)),
             const SizedBox(height: 8),
             Text('Time: ${_formatTime(_seconds)}',
-                style: const TextStyle(color: Colors.white54, fontSize: 14)),
+                style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 14)),
             const SizedBox(height: 24),
             Row(
               children: [
@@ -576,11 +576,11 @@ class _LiveWorkoutScreenState extends State<LiveWorkoutScreen>
                   child: OutlinedButton(
                     onPressed: () => Navigator.pop(context),
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Colors.white24),
+                      side: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.24)),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    child: const Text('Continue', style: TextStyle(color: Colors.white)),
+                    child: Text('Continue', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
                   ),
                 ),
                 const SizedBox(width: 12),

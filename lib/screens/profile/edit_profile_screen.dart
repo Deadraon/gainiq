@@ -114,15 +114,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D0D),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D0D0D),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: Theme.of(context).iconTheme.color),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text('Edit Profile', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text('Edit Profile', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontWeight: FontWeight.bold)),
         actions: [
           TextButton(
             onPressed: _isSaving ? null : _save,
@@ -245,7 +245,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Widget _label(String text) {
-    return Text(text, style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 13));
+    return Text(text, style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 13));
   }
 
   Widget _textField(
@@ -260,15 +260,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       controller: controller,
       keyboardType: keyboardType,
       validator: validator,
-      style: const TextStyle(color: Colors.white),
+      style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
       decoration: InputDecoration(
         labelText: label,
         prefixText: prefix,
-        prefixStyle: const TextStyle(color: Colors.white70),
-        prefixIcon: Icon(icon, color: Colors.white38, size: 18),
-        labelStyle: const TextStyle(color: Colors.white38, fontSize: 13),
+        prefixStyle: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color),
+        prefixIcon: Icon(icon, color: Theme.of(context).iconTheme.color?.withOpacity(0.38), size: 18),
+        labelStyle: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 13),
         filled: true,
-        fillColor: const Color(0xFF1A1A1A),
+        fillColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1A1A1A) : Colors.black.withOpacity(0.05),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -290,13 +290,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }) {
     return DropdownButtonFormField<String>(
       value: value,
-      dropdownColor: const Color(0xFF1A1A1A),
-      style: const TextStyle(color: Colors.white),
+      dropdownColor: Theme.of(context).cardColor,
+      style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Colors.white38, fontSize: 13),
+        labelStyle: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 13),
         filled: true,
-        fillColor: const Color(0xFF1A1A1A),
+        fillColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1A1A1A) : Colors.black.withOpacity(0.05),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -320,17 +320,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             duration: const Duration(milliseconds: 150),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: isSelected ? const Color(0xFFE5FF00).withOpacity(0.15) : const Color(0xFF1A1A1A),
+              color: isSelected ? const Color(0xFFE5FF00).withOpacity(0.15) : Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1A1A1A) : Colors.black.withOpacity(0.05),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: isSelected ? const Color(0xFFE5FF00) : Colors.white12,
+                color: isSelected ? const Color(0xFFE5FF00) : Theme.of(context).dividerColor.withOpacity(0.12),
                 width: isSelected ? 1.5 : 1,
               ),
             ),
             child: Text(
               opt,
               style: TextStyle(
-                color: isSelected ? const Color(0xFFE5FF00) : Colors.white60,
+                color: isSelected ? const Color(0xFFE5FF00) : Theme.of(context).textTheme.bodyMedium?.color,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 fontSize: 13,
               ),

@@ -10,6 +10,7 @@ import 'core/providers/user_provider.dart';
 import 'core/providers/workout_provider.dart';
 import 'core/providers/diet_provider.dart';
 import 'core/providers/subscription_provider.dart';
+import 'core/providers/theme_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,6 +37,7 @@ class GainiqApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => DietProvider()..loadMockDietPlan()),
         ChangeNotifierProvider(create: (_) => WorkoutProvider()..loadMockPlans()),
         ChangeNotifierProvider(create: (_) => SubscriptionProvider()),
@@ -47,19 +49,25 @@ class GainiqApp extends StatelessWidget {
           },
         ),
       ],
-      child: MaterialApp(
-        title: 'Gainiq',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.darkTheme,
-        builder: (context, child) {
-          return Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 450),
-              child: child,
-            ),
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp(
+            title: 'Gainiq',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: themeProvider.themeMode,
+            builder: (context, child) {
+              return Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 450),
+                  child: child,
+                ),
+              );
+            },
+            home: const SplashScreen(),
           );
         },
-        home: const SplashScreen(),
       ),
     );
   }

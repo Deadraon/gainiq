@@ -1,9 +1,12 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/models/subscription_model.dart';
 import '../../core/models/coupon_model.dart';
 import '../../core/providers/subscription_provider.dart';
 import '../../core/services/coupon_service.dart';
+import '../../core/services/paytm_service.dart';
+import 'paytm_webview_screen.dart';
 
 class PaywallScreen extends StatefulWidget {
   const PaywallScreen({super.key});
@@ -45,22 +48,252 @@ class _PaywallScreenState extends State<PaywallScreen>
   }
 
   Future<void> _purchase() async {
+    // ── Web guard: Paytm WebView only works on Android / iOS ──
+    if (kIsWeb) {
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          backgroundColor: Theme.of(context).cardColor,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              const Text('📱 ', style: TextStyle(fontSize: 22)),
+              Text('Use Mobile App',
+                  style: TextStyle(
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
+                      fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: Text(
+            'Paytm payments are only available on the Android or iOS app.\n\nPlease install the GainIQ app on your phone to subscribe.',
+            style: TextStyle(
+                color: Theme.of(context).textTheme.bodyMedium?.color,
+                fontSize: 14,
+                height: 1.5),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK',
+                  style: TextStyle(
+                      color: Color(0xFFE5FF00), fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    // Step 1 – Show confirm sheet
+    final confirmed = await _showPaymentConfirmSheet();
+    if (!confirmed || !mounted) return;
+
     setState(() => _isPurchasing = true);
-    await Future.delayed(const Duration(seconds: 2));
 
     final subProvider =
         Provider.of<SubscriptionProvider>(context, listen: false);
-    final success = await subProvider.activatePlan(_selected);
+    final userId = subProvider.currentUserId ??
+        'guest_${DateTime.now().millisecondsSinceEpoch}';
+    final amount = _selected == SubscriptionPlan.pro ? 199.0 : 299.0;
+    final planLabel =
+        _selected == SubscriptionPlan.pro ? 'Pro ⚡' : 'Advance 👑';
+
+    // Step 2 – Fetch Paytm transaction token
+    final tokenResponse = await PaytmService.generateTxnToken(
+      amount: amount,
+      customerId: userId,
+    );
 
     if (!mounted) return;
+
+    if (!tokenResponse.success) {
+      setState(() => _isPurchasing = false);
+      _showError(tokenResponse.errorMessage ?? 'Could not initiate payment.');
+      return;
+    }
+
     setState(() => _isPurchasing = false);
 
-    if (success) {
-      _showSuccessDialog(
-          _selected == SubscriptionPlan.pro ? 'Pro ⚡' : 'Advance 👑');
-    } else {
-      _showError('Something went wrong. Please try again.');
+    // Step 3 – Launch Paytm WebView checkout
+    final result = await Navigator.of(context).push<PaytmResult>(
+      MaterialPageRoute(
+        builder: (_) => PaytmWebViewScreen(
+          orderId: tokenResponse.orderId!,
+          txnToken: tokenResponse.txnToken!,
+          amount: tokenResponse.amount!,
+        ),
+        fullscreenDialog: true,
+      ),
+    );
+
+    if (!mounted) return;
+
+    if (result == null) return; // WebView closed without result
+
+    // Step 4 – Handle result
+    switch (result.status) {
+      case PaytmStatus.success:
+        final success = await subProvider.activatePlan(_selected);
+        if (mounted) {
+          success
+              ? _showSuccessDialog(planLabel)
+              : _showError(
+                  'Payment received but activation failed. Contact support.');
+        }
+        break;
+      case PaytmStatus.failed:
+        _showError(result.message ?? 'Payment failed. Please try again.');
+        break;
+      case PaytmStatus.cancelled:
+        break; // User backed out — no action
+      case PaytmStatus.pending:
+        _showPendingSnackbar(result.orderId ?? '');
+        break;
     }
+  }
+
+  Future<bool> _showPaymentConfirmSheet() async {
+    final amount = _selected == SubscriptionPlan.pro ? '₹199' : '₹299';
+    final planName = _selected == SubscriptionPlan.pro ? 'Pro ⚡' : 'Advance 👑';
+
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40, height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF002F6C).withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  // Paytm-styled icon
+                  child: const Text('💳', style: TextStyle(fontSize: 22)),
+                ),
+                const SizedBox(width: 14),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Pay via Paytm',
+                        style: TextStyle(
+                            color: Theme.of(context).textTheme.bodyLarge?.color,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 17)),
+                    Text('UPI · Cards · Net Banking · Wallet',
+                        style: TextStyle(
+                            color: Theme.of(context).textTheme.bodyMedium?.color,
+                            fontSize: 12)),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFF1A1A1A)
+                    : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('$planName Plan',
+                      style: TextStyle(
+                          color: Theme.of(context).textTheme.bodyMedium?.color,
+                          fontSize: 13)),
+                  Text(amount,
+                      style: TextStyle(
+                          color: Theme.of(context).textTheme.bodyLarge?.color,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Billed monthly · Cancel anytime',
+              style: TextStyle(
+                  color: Theme.of(context).textTheme.bodyMedium?.color,
+                  fontSize: 11),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF002F6C), // Paytm navy
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
+                  elevation: 0,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text('🔒 ', style: TextStyle(fontSize: 14)),
+                    Text('Continue to Pay $amount',
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 15)),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text('Cancel',
+                  style: TextStyle(
+                      color: Theme.of(context).textTheme.bodyMedium?.color,
+                      fontSize: 13)),
+            ),
+          ],
+        ),
+      ),
+    );
+    return confirmed ?? false;
+  }
+
+  void _showPendingSnackbar(String orderId) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: Colors.orange.shade800,
+        duration: const Duration(seconds: 5),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Payment Pending',
+                style: TextStyle(
+                    fontWeight: FontWeight.bold, color: Colors.white)),
+            Text(
+              'Your payment is being verified. Order: $orderId',
+              style: const TextStyle(color: Colors.white70, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _redeemCoupon() async {
@@ -128,7 +361,7 @@ class _PaywallScreenState extends State<PaywallScreen>
       context: context,
       barrierDismissible: false,
       builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: Theme.of(context).cardColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -144,10 +377,10 @@ class _PaywallScreenState extends State<PaywallScreen>
                   color: Colors.black, size: 36),
             ),
             const SizedBox(height: 20),
-            const Text(
+            Text(
               'Welcome to Premium!',
               style: TextStyle(
-                  color: Colors.white,
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
                   fontSize: 20,
                   fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
@@ -156,7 +389,7 @@ class _PaywallScreenState extends State<PaywallScreen>
             Text(
               'Your $planLabel plan is now active.',
               style:
-                  TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 14),
+                  TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 14),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -187,7 +420,7 @@ class _PaywallScreenState extends State<PaywallScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: FadeTransition(
         opacity: _fadeAnimation,
         child: CustomScrollView(
@@ -214,8 +447,8 @@ class _PaywallScreenState extends State<PaywallScreen>
                         children: [
                           IconButton(
                             onPressed: () => Navigator.of(context).pop(),
-                            icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                                color: Colors.white),
+                            icon: Icon(Icons.arrow_back_ios_new_rounded,
+                                color: Theme.of(context).iconTheme.color),
                             padding: EdgeInsets.zero,
                           ),
                           const SizedBox(height: 20),
@@ -231,17 +464,17 @@ class _PaywallScreenState extends State<PaywallScreen>
                                     style: TextStyle(fontSize: 22)),
                               ),
                               const SizedBox(width: 14),
-                              const Column(
+                              Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text('Upgrade GainIQ',
                                       style: TextStyle(
-                                          color: Colors.white,
+                                          color: Theme.of(context).textTheme.bodyLarge?.color,
                                           fontSize: 26,
                                           fontWeight: FontWeight.bold)),
                                   Text('Unlock your full potential',
                                       style: TextStyle(
-                                          color: Colors.white54, fontSize: 14)),
+                                          color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 14)),
                                 ],
                               ),
                             ],
@@ -268,9 +501,9 @@ class _PaywallScreenState extends State<PaywallScreen>
               padding: const EdgeInsets.symmetric(horizontal: 20),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  const Text('Choose Your Plan',
+                  Text('Choose Your Plan',
                       style: TextStyle(
-                          color: Colors.white,
+                          color: Theme.of(context).textTheme.bodyLarge?.color,
                           fontSize: 18,
                           fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
@@ -348,7 +581,7 @@ class _PaywallScreenState extends State<PaywallScreen>
                     child: Text(
                       'Cancel anytime · Auto-renews monthly · No hidden fees',
                       style: TextStyle(
-                          color: Colors.white.withOpacity(0.35), fontSize: 11),
+                          color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 11),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -357,9 +590,9 @@ class _PaywallScreenState extends State<PaywallScreen>
                   // ── Coupon Section ──────────────────────────────
                   Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFF141414),
+                      color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withOpacity(0.07)),
+                      border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.07)),
                     ),
                     child: Column(
                       children: [
@@ -389,18 +622,18 @@ class _PaywallScreenState extends State<PaywallScreen>
                                       size: 16),
                                 ),
                                 const SizedBox(width: 12),
-                                const Text('Have a coupon code?',
+                                Text('Have a coupon code?',
                                     style: TextStyle(
-                                        color: Colors.white70,
+                                        color: Theme.of(context).textTheme.bodyMedium?.color,
                                         fontWeight: FontWeight.w500,
                                         fontSize: 14)),
                                 const Spacer(),
                                 AnimatedRotation(
                                   turns: _showCouponField ? 0.5 : 0,
                                   duration: const Duration(milliseconds: 250),
-                                  child: const Icon(
+                                  child: Icon(
                                       Icons.keyboard_arrow_down_rounded,
-                                      color: Colors.white38,
+                                      color: Theme.of(context).iconTheme.color?.withOpacity(0.38),
                                       size: 20),
                                 ),
                               ],
@@ -429,18 +662,18 @@ class _PaywallScreenState extends State<PaywallScreen>
                                         controller: _couponController,
                                         textCapitalization:
                                             TextCapitalization.characters,
-                                        style: const TextStyle(
-                                            color: Colors.white,
+                                        style: TextStyle(
+                                            color: Theme.of(context).textTheme.bodyLarge?.color,
                                             letterSpacing: 2,
                                             fontWeight: FontWeight.bold),
                                         decoration: InputDecoration(
                                           hintText: 'ENTER CODE',
                                           hintStyle: TextStyle(
-                                              color: Colors.white.withOpacity(0.2),
+                                              color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.2),
                                               letterSpacing: 2,
                                               fontSize: 13),
                                           filled: true,
-                                          fillColor: const Color(0xFF1E1E1E),
+                                          fillColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1E1E) : Colors.black.withOpacity(0.05),
                                           border: OutlineInputBorder(
                                             borderRadius:
                                                 BorderRadius.circular(12),
@@ -449,9 +682,9 @@ class _PaywallScreenState extends State<PaywallScreen>
                                           contentPadding:
                                               const EdgeInsets.symmetric(
                                                   horizontal: 14, vertical: 12),
-                                          prefixIcon: const Icon(
+                                          prefixIcon: Icon(
                                               Icons.confirmation_number_rounded,
-                                              color: Colors.white38,
+                                              color: Theme.of(context).iconTheme.color?.withOpacity(0.38),
                                               size: 18),
                                         ),
                                         onChanged: (_) => setState(() {
@@ -537,7 +770,7 @@ class _PaywallScreenState extends State<PaywallScreen>
         children: [
           Icon(icon, color: const Color(0xFFE5FF00), size: 18),
           const SizedBox(width: 10),
-          Text(text, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+          Text(text, style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 13)),
         ],
       );
 }
@@ -577,10 +810,10 @@ class _PlanCard extends StatelessWidget {
         curve: Curves.easeInOut,
         decoration: BoxDecoration(
           color:
-              isSelected ? color.withOpacity(0.08) : const Color(0xFF141414),
+              isSelected ? color.withOpacity(0.08) : Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? color : Colors.white.withOpacity(0.08),
+            color: isSelected ? color : Theme.of(context).dividerColor.withOpacity(0.08),
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
@@ -613,8 +846,8 @@ class _PlanCard extends StatelessWidget {
                       Row(
                         children: [
                           Text(name,
-                              style: const TextStyle(
-                                  color: Colors.white,
+                              style: TextStyle(
+                                  color: Theme.of(context).textTheme.bodyLarge?.color,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 18)),
                           if (badge != null) ...[
@@ -637,7 +870,7 @@ class _PlanCard extends StatelessWidget {
                       ),
                       Text('Billed monthly',
                           style: TextStyle(
-                              color: Colors.white.withOpacity(0.4),
+                              color: Theme.of(context).textTheme.bodyMedium?.color,
                               fontSize: 12)),
                     ],
                   ),
@@ -652,7 +885,7 @@ class _PlanCard extends StatelessWidget {
                               fontWeight: FontWeight.bold)),
                       Text(period,
                           style: TextStyle(
-                              color: Colors.white.withOpacity(0.4),
+                              color: Theme.of(context).textTheme.bodyMedium?.color,
                               fontSize: 12)),
                     ],
                   ),
@@ -668,8 +901,8 @@ class _PlanCard extends StatelessWidget {
                         Icon(Icons.check_circle_rounded, color: color, size: 16),
                         const SizedBox(width: 10),
                         Text(f,
-                            style: const TextStyle(
-                                color: Colors.white70, fontSize: 13)),
+                            style: TextStyle(
+                                color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 13)),
                       ],
                     ),
                   )),

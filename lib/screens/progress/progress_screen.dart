@@ -77,7 +77,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
     final logs = workoutProvider.logs;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D0D),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 100),
         child: Column(
@@ -89,19 +89,19 @@ class _ProgressScreenState extends State<ProgressScreen> {
             const SizedBox(height: 32),
 
             // ── Workout Volume Chart ──────────────────────────────────
-            const Text('Workout Volume',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.white)),
+            Text('Workout Volume',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Theme.of(context).textTheme.bodyLarge?.color)),
             const SizedBox(height: 6),
             Text('Total sets completed per workout',
-                style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 13)),
+                style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 13)),
             const SizedBox(height: 16),
             _buildChart(logs),
 
             const SizedBox(height: 32),
 
             // ── Recent Workouts ───────────────────────────────────────
-            const Text('Recent Workouts',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.white)),
+            Text('Recent Workouts',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Theme.of(context).textTheme.bodyLarge?.color)),
             const SizedBox(height: 16),
 
             if (logs.isEmpty)
@@ -123,13 +123,13 @@ class _ProgressScreenState extends State<ProgressScreen> {
           children: [
             const Icon(Icons.auto_awesome, color: Color(0xFFE5FF00), size: 20),
             const SizedBox(width: 8),
-            const Text('AI Body Analysis',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.white)),
+            Text('AI Body Analysis',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Theme.of(context).textTheme.bodyLarge?.color)),
           ],
         ),
         const SizedBox(height: 6),
         Text('Upload a photo — Gemini AI analyses your physique & progress',
-            style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13)),
+            style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 13)),
         const SizedBox(height: 16),
 
         // Photo area
@@ -139,12 +139,12 @@ class _ProgressScreenState extends State<ProgressScreen> {
             width: double.infinity,
             height: _selectedImage != null ? 260 : 160,
             decoration: BoxDecoration(
-              color: const Color(0xFF141414),
+              color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: _selectedImage != null
                     ? const Color(0xFFE5FF00).withOpacity(0.4)
-                    : Colors.white.withOpacity(0.08),
+                    : Theme.of(context).dividerColor.withOpacity(0.08),
                 width: 1.5,
               ),
             ),
@@ -193,10 +193,10 @@ class _ProgressScreenState extends State<ProgressScreen> {
                         child: const Icon(Icons.add_a_photo_outlined, color: Color(0xFFE5FF00), size: 26),
                       ),
                       const SizedBox(height: 12),
-                      const Text('Tap to upload your progress photo',
-                          style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500)),
+                      Text('Tap to upload your progress photo',
+                          style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontSize: 14, fontWeight: FontWeight.w500)),
                       const SizedBox(height: 4),
-                      Text('Camera or Gallery', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12)),
+                      Text('Camera or Gallery', style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 12)),
                     ],
                   ),
           ),
@@ -271,16 +271,16 @@ class _ProgressScreenState extends State<ProgressScreen> {
   void _showPhotoOptions() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1A1A1A),
+      backgroundColor: Theme.of(context).cardColor,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (_) => Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: Theme.of(context).brightness == Brightness.dark ? Colors.white24 : Colors.black26, borderRadius: BorderRadius.circular(2))),
             const SizedBox(height: 20),
-            const Text('Upload Progress Photo', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+            Text('Upload Progress Photo', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 20),
             _photoOption(Icons.camera_alt_outlined, 'Take Photo', () {
               Navigator.pop(context);
@@ -305,15 +305,15 @@ class _ProgressScreenState extends State<ProgressScreen> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.05),
+          color: Theme.of(context).brightness == Brightness.dark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white.withOpacity(0.08)),
+          border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.08)),
         ),
         child: Row(
           children: [
             Icon(icon, color: const Color(0xFFE5FF00), size: 22),
             const SizedBox(width: 14),
-            Text(label, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w500)),
+            Text(label, style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontSize: 15, fontWeight: FontWeight.w500)),
           ],
         ),
       ),
@@ -345,6 +345,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
 
         // Overall feedback
         _infoCard(
+          context: context,
           icon: Icons.chat_bubble_outline,
           title: 'Overall Feedback',
           content: result.overallFeedback,
@@ -355,13 +356,14 @@ class _ProgressScreenState extends State<ProgressScreen> {
         // Stats row
         Row(
           children: [
-            Expanded(child: _statCard('Body Fat', result.estimatedBodyFat, Icons.monitor_weight_outlined)),
+            Expanded(child: _statCard(context, 'Body Fat', result.estimatedBodyFat, Icons.monitor_weight_outlined)),
             const SizedBox(width: 10),
-            Expanded(child: _statCard('Muscle Def.', result.muscleDefinition.split(' - ').first, Icons.fitness_center)),
+            Expanded(child: _statCard(context, 'Muscle Def.', result.muscleDefinition.split(' - ').first, Icons.fitness_center)),
           ],
         ),
         const SizedBox(height: 10),
         _infoCard(
+          context: context,
           icon: Icons.accessibility_new,
           title: 'Posture',
           content: result.posture,
@@ -371,12 +373,12 @@ class _ProgressScreenState extends State<ProgressScreen> {
 
         // Strengths
         if (result.strengths.isNotEmpty)
-          _listCard('💪 Strengths', result.strengths, Colors.greenAccent),
+          _listCard(context, '💪 Strengths', result.strengths, Colors.greenAccent),
         const SizedBox(height: 10),
 
         // Improvements
         if (result.improvements.isNotEmpty)
-          _listCard('🎯 Areas to Improve', result.improvements, Colors.orangeAccent),
+          _listCard(context, '🎯 Areas to Improve', result.improvements, Colors.orangeAccent),
         const SizedBox(height: 10),
 
         // Next tip
@@ -400,7 +402,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                   children: [
                     const Text('AI Tip', style: TextStyle(color: Color(0xFFE5FF00), fontWeight: FontWeight.bold, fontSize: 13)),
                     const SizedBox(height: 4),
-                    Text(result.nextStepTip, style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.5)),
+                    Text(result.nextStepTip, style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontSize: 13, height: 1.5)),
                   ],
                 ),
               ),
@@ -411,19 +413,19 @@ class _ProgressScreenState extends State<ProgressScreen> {
         const SizedBox(height: 8),
         Text(
           'Note: This is an AI estimate for fitness guidance only, not a medical assessment.',
-          style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 11),
+          style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 11),
         ),
       ],
     );
   }
 
-  Widget _infoCard({required IconData icon, required String title, required String content, required Color color}) {
+  Widget _infoCard({required BuildContext context, required IconData icon, required String title, required String content, required Color color}) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF141414),
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
+        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.06)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -434,45 +436,45 @@ class _ProgressScreenState extends State<ProgressScreen> {
             Text(title, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12)),
           ]),
           const SizedBox(height: 8),
-          Text(content, style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.5)),
+          Text(content, style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontSize: 13, height: 1.5)),
         ],
       ),
     );
   }
 
-  Widget _statCard(String label, String value, IconData icon) {
+  Widget _statCard(BuildContext context, String label, String value, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF141414),
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
+        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.06)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: Colors.white38, size: 18),
+          Icon(icon, color: Theme.of(context).iconTheme.color?.withOpacity(0.4), size: 18),
           const SizedBox(height: 8),
-          Text(label, style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11)),
+          Text(label, style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 11)),
           const SizedBox(height: 3),
-          Text(value, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600), maxLines: 2, overflow: TextOverflow.ellipsis),
+          Text(value, style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontSize: 13, fontWeight: FontWeight.w600), maxLines: 2, overflow: TextOverflow.ellipsis),
         ],
       ),
     );
   }
 
-  Widget _listCard(String title, List<String> items, Color bulletColor) {
+  Widget _listCard(BuildContext context, String title, List<String> items, Color bulletColor) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF141414),
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
+        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.06)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+          Text(title, style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontWeight: FontWeight.bold, fontSize: 13)),
           const SizedBox(height: 10),
           ...items.map((item) => Padding(
                 padding: const EdgeInsets.only(bottom: 6),
@@ -486,7 +488,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                       decoration: BoxDecoration(color: bulletColor, shape: BoxShape.circle),
                     ),
                     const SizedBox(width: 10),
-                    Expanded(child: Text(item, style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4))),
+                    Expanded(child: Text(item, style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 13, height: 1.4))),
                   ],
                 ),
               )),
@@ -500,15 +502,15 @@ class _ProgressScreenState extends State<ProgressScreen> {
       height: 220,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF141414),
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.05)),
       ),
       child: logs.isEmpty
           ? Center(
               child: Text(
                 'Complete a workout to see your progress chart.',
-                style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13),
+                style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 13),
                 textAlign: TextAlign.center,
               ),
             )
@@ -518,7 +520,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                   show: true,
                   drawVerticalLine: false,
                   horizontalInterval: 5,
-                  getDrawingHorizontalLine: (v) => FlLine(color: Colors.white.withOpacity(0.05), strokeWidth: 1),
+                  getDrawingHorizontalLine: (v) => FlLine(color: Theme.of(context).dividerColor.withOpacity(0.05), strokeWidth: 1),
                 ),
                 titlesData: FlTitlesData(
                   rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -528,7 +530,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                       showTitles: true,
                       reservedSize: 30,
                       getTitlesWidget: (value, _) => Text(value.toInt().toString(),
-                          style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11)),
+                          style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 11)),
                     ),
                   ),
                   bottomTitles: AxisTitles(
@@ -541,7 +543,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                           return Padding(
                             padding: const EdgeInsets.only(top: 8),
                             child: Text(DateFormat('MMM d').format(recentLogs[index].date),
-                                style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 10)),
+                                style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 10)),
                           );
                         }
                         return const Text('');
@@ -570,7 +572,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
             backDrawRodData: BackgroundBarChartRodData(
               show: true,
               toY: 50,
-              color: Colors.white.withOpacity(0.05),
+              color: Theme.of(context).brightness == Brightness.dark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
             ),
           ),
         ],
@@ -583,15 +585,15 @@ class _ProgressScreenState extends State<ProgressScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.05)),
       ),
       child: Column(
         children: [
-          const Icon(Icons.fitness_center, size: 40, color: Colors.white24),
+          Icon(Icons.fitness_center, size: 40, color: Theme.of(context).iconTheme.color?.withOpacity(0.24)),
           const SizedBox(height: 12),
-          Text('No workouts logged yet.', style: TextStyle(color: Colors.white.withOpacity(0.4))),
+          Text('No workouts logged yet.', style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color)),
         ],
       ),
     );
@@ -602,9 +604,9 @@ class _ProgressScreenState extends State<ProgressScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF141414),
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.05)),
       ),
       child: Row(
         children: [
@@ -621,20 +623,20 @@ class _ProgressScreenState extends State<ProgressScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(log.planName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
+                Text(log.planName, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Theme.of(context).textTheme.bodyLarge?.color)),
                 const SizedBox(height: 4),
                 Text(DateFormat('EEEE, MMM d • h:mm a').format(log.date),
-                    style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12)),
+                    style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 12)),
               ],
             ),
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text('${log.totalVolume} sets', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
+              Text('${log.totalVolume} sets', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Theme.of(context).textTheme.bodyLarge?.color)),
               const SizedBox(height: 2),
               Text('${(log.durationSeconds / 60).floor()} min',
-                  style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12)),
+                  style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 12)),
             ],
           ),
         ],
