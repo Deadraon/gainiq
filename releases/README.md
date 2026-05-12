@@ -4,7 +4,7 @@
 
 | File | Size | Date |
 |---|---|---|
-| `gainiq-v1.0.0-paytm-debug.apk` | ~155 MB | 2026-05-12 |
+| `gainiq-v1.0.0-release.apk` | 56.4 MB | 2026-05-12 |
 
 ### What's included
 - ✅ Paytm Payment Gateway integration (test/staging mode)
