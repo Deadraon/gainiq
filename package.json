@@ -24,6 +24,7 @@
   "homepage": "https://github.com/Deadraon/gainiq#readme",
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
-    "firebase-admin": "^13.8.0"
+    "firebase-admin": "^13.8.0",
+    "paytmchecksum": "^1.5.1"
   }
 }
