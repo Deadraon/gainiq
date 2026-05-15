@@ -301,19 +301,8 @@ class _AuthScreenState extends State<AuthScreen> {
                         padding: const EdgeInsets.only(top: 60),
                         child: Column(
                           children: [
-                            Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: const Color(0xFFE5FF00).withOpacity(0.1),
-                                border: Border.all(color: const Color(0xFFE5FF00).withOpacity(0.3), width: 2),
-                              ),
-                              child: const Icon(Icons.fitness_center_rounded, size: 48, color: Color(0xFFE5FF00)),
-                            ),
+                            const _VideoLogoLoop(),
                             const SizedBox(height: 24),
-                            const Text('GAINIQ', style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold, letterSpacing: 4)),
-                            const SizedBox(height: 8),
-                            const Text('YOUR AI FITNESS COACH', style: TextStyle(color: Colors.white54, fontSize: 13, letterSpacing: 2, fontWeight: FontWeight.w500)),
                           ],
                         ),
                       ),
@@ -631,3 +620,28 @@ class _Glow extends StatelessWidget {
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VIDEO LOGO LOOP
+// ─────────────────────────────────────────────────────────────────────────────
+class _VideoLogoLoop extends StatefulWidget {
+  const _VideoLogoLoop();
+
+  @override
+  State<_VideoLogoLoop> createState() => _VideoLogoLoopState();
+}
+
+class _VideoLogoLoopState extends State<_VideoLogoLoop> {
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 420,
+      height: 280,
+      child: Image.asset(
+        'assets/animation/loop_transparent.gif',
+        fit: BoxFit.contain,
+      ),
+    );
+  }
+}
+

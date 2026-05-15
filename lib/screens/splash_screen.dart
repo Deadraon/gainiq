@@ -10,68 +10,63 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnim;
+  bool _navigated = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeIn,
-    ));
 
-    _controller.forward().then((_) {
-      Future.delayed(const Duration(seconds: 1), () {
-        final user = FirebaseAuth.instance.currentUser;
-        if (user != null) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const MainNavigation()),
-          );
-        } else {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const AuthScreen()),
-          );
-        }
-      });
-    });
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _fadeAnim = CurvedAnimation(parent: _fadeController, curve: Curves.easeIn);
+    _fadeController.forward();
+
+    // Navigate after full animation plays (~9.6 seconds)
+    Future.delayed(const Duration(seconds: 10), () => _navigateNext());
+  }
+
+  void _navigateNext() {
+    if (_navigated || !mounted) return;
+    _navigated = true;
+
+    final user = FirebaseAuth.instance.currentUser;
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) =>
+            user != null ? const MainNavigation() : const AuthScreen(),
+        transitionsBuilder: (_, anim, __, child) =>
+            FadeTransition(opacity: anim, child: child),
+        transitionDuration: const Duration(milliseconds: 600),
+      ),
+    );
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _fadeController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'GAINIQ',
-                style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                  fontStyle: FontStyle.italic,
-                  letterSpacing: 2,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Train Smarter. Eat Better. Grow Faster.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ],
+      backgroundColor: const Color(0xFF0D0D0D),
+      body: FadeTransition(
+        opacity: _fadeAnim,
+        child: Center(
+          child: Transform.scale(
+            scale: 1.4,
+            child: Image.asset(
+              'assets/animation/home_transparent.gif',
+              fit: BoxFit.contain,
+              width: double.infinity,
+            ),
           ),
         ),
       ),

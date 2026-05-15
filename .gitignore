@@ -63,3 +63,5 @@ android/gradle_error.txt
 
 .vercel
 node_modules/ 
+build/
+*.apk

@@ -81,19 +81,11 @@ class PaytmService {
   static bool get isSupported => !kIsWeb;
 
   // ── Generate Transaction Token ────────────────────────────────
-  /// Calls Paytm staging API to get a txnToken.
   static Future<PaytmTxnTokenResponse> generateTxnToken({
     required double amount,
     required String customerId,
     String? orderId,
   }) async {
-    if (!isConfigured) {
-      return const PaytmTxnTokenResponse(
-        success: false,
-        errorMessage: 'Paytm not configured. Check your .env credentials.',
-      );
-    }
-
     if (!isSupported) {
       return const PaytmTxnTokenResponse(
         success: false,
@@ -106,81 +98,59 @@ class PaytmService {
     final amountStr = amount.toStringAsFixed(2);
 
     try {
-      // ── Build body ──────────────────────────────────────────
-      final body = <String, dynamic>{
-        'requestType': 'Payment',
-        'mid': mid,
-        'websiteName': website,
-        'orderId': order,
-        'callbackUrl': '$baseUrl/theia/paytmCallback?ORDER_ID=$order',
-        'txnAmount': {'value': amountStr, 'currency': 'INR'},
-        'userInfo': {'custId': customerId},
-      };
+      debugPrint('PAYTM: Calling secure Vercel backend for token...');
 
-      // ── Signature: HMAC-SHA256 of JSON body string ─────────
-      // Paytm v1 API: sign the full body JSON (no salt, no pipe-sep)
-      final signature = _signBody(body);
-
-      final payload = jsonEncode({
-        'body': body,
-        'head': {'signature': signature},
-      });
-
-      debugPrint('PAYTM: Initiating transaction for order $order');
-      debugPrint('PAYTM: MID=$mid | isTest=$isTest');
-
-      final uri = Uri.parse(
-          '$baseUrl/theia/api/v1/initiateTransaction?mid=$mid&orderId=$order');
+      // Replace with your actual Vercel domain
+      final backendUrl = 'https://gainiq-ten.vercel.app/api/paytm';
 
       final response = await http
           .post(
-            uri,
+            Uri.parse(backendUrl),
             headers: {
               'Content-Type': 'application/json; charset=UTF-8',
               'Accept': 'application/json',
             },
-            body: payload,
+            body: jsonEncode({
+              'amount': amountStr,
+              'customerId': customerId,
+              'orderId': order,
+              'isTest': isTest,
+            }),
           )
           .timeout(const Duration(seconds: 30));
 
-      debugPrint('PAYTM: HTTP ${response.statusCode}');
+      debugPrint('PAYTM: Vercel HTTP ${response.statusCode}');
 
       if (response.statusCode != 200) {
+        final errorMsg = jsonDecode(response.body)['errorMessage'] ?? 'Server error';
         return PaytmTxnTokenResponse(
           success: false,
-          errorMessage:
-              'Paytm server error (${response.statusCode}). Try again.',
+          errorMessage: errorMsg,
         );
       }
 
       final json = jsonDecode(response.body) as Map<String, dynamic>;
-      final resultInfo = json['body']?['resultInfo'] as Map<String, dynamic>?;
-      final resultCode = resultInfo?['resultCode']?.toString() ?? '';
-      final resultMsg = resultInfo?['resultMsg']?.toString() ?? 'Unknown error';
-      final txnToken = json['body']?['txnToken']?.toString();
 
-      debugPrint('PAYTM: resultCode=$resultCode msg=$resultMsg');
-
-      if (resultCode == '0000' && txnToken != null) {
-        debugPrint('PAYTM: Token acquired ✓');
+      if (json['success'] == true) {
+        debugPrint('PAYTM: Token acquired from backend ✓');
         return PaytmTxnTokenResponse(
           success: true,
-          txnToken: txnToken,
-          orderId: order,
-          amount: amountStr,
-          mid: mid,
+          txnToken: json['txnToken'],
+          orderId: json['orderId'],
+          amount: json['amount'],
+          mid: json['mid'] ?? mid,
         );
       } else {
         return PaytmTxnTokenResponse(
           success: false,
-          errorMessage: 'Paytm: $resultMsg (code: $resultCode)',
+          errorMessage: json['errorMessage'] ?? 'Failed to acquire token.',
         );
       }
     } catch (e) {
       debugPrint('PAYTM ERROR: $e');
       return PaytmTxnTokenResponse(
         success: false,
-        errorMessage: 'Network error. Check your internet connection.',
+        errorMessage: 'Network error communicating with backend.',
       );
     }
   }

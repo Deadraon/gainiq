@@ -45,7 +45,8 @@ class HomeScreen extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          const Text('👋 ', style: TextStyle(fontSize: 18)),
+                          const _PulsingLogo(),
+                          const SizedBox(width: 8),
                           Text(
                             'Hello, $firstName',
                             style: TextStyle(
@@ -738,6 +739,27 @@ class _ProfilePanel extends StatelessWidget {
           Text(value, style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontWeight: FontWeight.w600, fontSize: 14)),
         ],
       ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PULSING LOGO
+// ─────────────────────────────────────────────────────────────────────────────
+class _PulsingLogo extends StatefulWidget {
+  const _PulsingLogo();
+
+  @override
+  State<_PulsingLogo> createState() => _PulsingLogoState();
+}
+
+class _PulsingLogoState extends State<_PulsingLogo> {
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      'assets/animation/home_transparent.gif',
+      height: 44,
+      fit: BoxFit.contain,
     );
   }
 }
