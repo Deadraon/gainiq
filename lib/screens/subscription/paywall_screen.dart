@@ -2,11 +2,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/models/subscription_model.dart';
-import '../../core/models/coupon_model.dart';
 import '../../core/providers/subscription_provider.dart';
 import '../../core/services/coupon_service.dart';
-import '../../core/services/paytm_service.dart';
-import 'paytm_webview_screen.dart';
+import '../../core/services/mymobpay_service.dart';
+import 'mymobpay_webview_screen.dart';
 
 class PaywallScreen extends StatefulWidget {
   const PaywallScreen({super.key});
@@ -48,7 +47,7 @@ class _PaywallScreenState extends State<PaywallScreen>
   }
 
   Future<void> _purchase() async {
-    // ── Web guard: Paytm WebView only works on Android / iOS ──
+    // ── Web guard: UPI Payments only work on Android / iOS ──
     if (kIsWeb) {
       showDialog(
         context: context,
@@ -65,7 +64,7 @@ class _PaywallScreenState extends State<PaywallScreen>
             ],
           ),
           content: Text(
-            'Paytm payments are only available on the Android or iOS app.\n\nPlease install the GainIQ app on your phone to subscribe.',
+            'UPI payments are only available on the Android or iOS app.\n\nPlease install the GainIQ app on your phone to subscribe.',
             style: TextStyle(
                 color: Theme.of(context).textTheme.bodyMedium?.color,
                 fontSize: 14,
@@ -98,29 +97,32 @@ class _PaywallScreenState extends State<PaywallScreen>
     final planLabel =
         _selected == SubscriptionPlan.pro ? 'Pro ⚡' : 'Advance 👑';
 
-    // Step 2 – Fetch Paytm transaction token
-    final tokenResponse = await PaytmService.generateTxnToken(
+    // Step 2 – Fetch MyMobPay order details from secure Vercel API
+    final orderResponse = await MyMobPayService.generateOrder(
       amount: amount,
       customerId: userId,
+      planName: _selected.name,
+      customerPhone: subProvider.currentUserPhone,
+      customerName: subProvider.currentUserEmail,
     );
 
     if (!mounted) return;
 
-    if (!tokenResponse.success) {
+    if (!orderResponse.success) {
       setState(() => _isPurchasing = false);
-      _showError(tokenResponse.errorMessage ?? 'Could not initiate payment.');
+      _showError(orderResponse.errorMessage ?? 'Could not initiate payment.');
       return;
     }
 
     setState(() => _isPurchasing = false);
 
-    // Step 3 – Launch Paytm WebView checkout
-    final result = await Navigator.of(context).push<PaytmResult>(
+    // Step 3 – Launch MyMobPay WebView checkout
+    final result = await Navigator.of(context).push<MyMobPayResult>(
       MaterialPageRoute(
-        builder: (_) => PaytmWebViewScreen(
-          orderId: tokenResponse.orderId!,
-          txnToken: tokenResponse.txnToken!,
-          amount: tokenResponse.amount!,
+        builder: (_) => MyMobPayWebViewScreen(
+          orderId: orderResponse.orderId!,
+          amount: orderResponse.orderAmount!,
+          apiKey: orderResponse.apiKey!,
         ),
         fullscreenDialog: true,
       ),
@@ -132,7 +134,7 @@ class _PaywallScreenState extends State<PaywallScreen>
 
     // Step 4 – Handle result
     switch (result.status) {
-      case PaytmStatus.success:
+      case MyMobPayStatus.success:
         final success = await subProvider.activatePlan(_selected);
         if (mounted) {
           success
@@ -141,12 +143,12 @@ class _PaywallScreenState extends State<PaywallScreen>
                   'Payment received but activation failed. Contact support.');
         }
         break;
-      case PaytmStatus.failed:
+      case MyMobPayStatus.failed:
         _showError(result.message ?? 'Payment failed. Please try again.');
         break;
-      case PaytmStatus.cancelled:
+      case MyMobPayStatus.cancelled:
         break; // User backed out — no action
-      case PaytmStatus.pending:
+      case MyMobPayStatus.pending:
         _showPendingSnackbar(result.orderId ?? '');
         break;
     }
@@ -181,22 +183,22 @@ class _PaywallScreenState extends State<PaywallScreen>
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF002F6C).withOpacity(0.12),
+                    color: const Color(0xFF1E3A8A).withOpacity(0.12),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  // Paytm-styled icon
-                  child: const Text('💳', style: TextStyle(fontSize: 22)),
+                  // UPI Icon
+                  child: const Text('⚡', style: TextStyle(fontSize: 22)),
                 ),
                 const SizedBox(width: 14),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Pay via Paytm',
+                    Text('Pay via UPI',
                         style: TextStyle(
                             color: Theme.of(context).textTheme.bodyLarge?.color,
                             fontWeight: FontWeight.bold,
                             fontSize: 17)),
-                    Text('UPI · Cards · Net Banking · Wallet',
+                    Text('Google Pay · PhonePe · Paytm · BHIM',
                         style: TextStyle(
                             color: Theme.of(context).textTheme.bodyMedium?.color,
                             fontSize: 12)),
@@ -241,7 +243,7 @@ class _PaywallScreenState extends State<PaywallScreen>
               child: ElevatedButton(
                 onPressed: () => Navigator.pop(context, true),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF002F6C), // Paytm navy
+                  backgroundColor: const Color(0xFF1E3A8A), // Indigo Blue
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
