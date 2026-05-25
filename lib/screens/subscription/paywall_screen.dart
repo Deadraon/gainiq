@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -6,6 +7,7 @@ import '../../core/providers/subscription_provider.dart';
 import '../../core/services/coupon_service.dart';
 import '../../core/services/mymobpay_service.dart';
 import 'mymobpay_webview_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class PaywallScreen extends StatefulWidget {
   const PaywallScreen({super.key});
@@ -47,42 +49,6 @@ class _PaywallScreenState extends State<PaywallScreen>
   }
 
   Future<void> _purchase() async {
-    // ── Web guard: UPI Payments only work on Android / iOS ──
-    if (kIsWeb) {
-      showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          backgroundColor: Theme.of(context).cardColor,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Row(
-            children: [
-              const Text('📱 ', style: TextStyle(fontSize: 22)),
-              Text('Use Mobile App',
-                  style: TextStyle(
-                      color: Theme.of(context).textTheme.bodyLarge?.color,
-                      fontWeight: FontWeight.bold)),
-            ],
-          ),
-          content: Text(
-            'UPI payments are only available on the Android or iOS app.\n\nPlease install the GainIQ app on your phone to subscribe.',
-            style: TextStyle(
-                color: Theme.of(context).textTheme.bodyMedium?.color,
-                fontSize: 14,
-                height: 1.5),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK',
-                  style: TextStyle(
-                      color: Color(0xFFE5FF00), fontWeight: FontWeight.bold)),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
-
     // Step 1 – Show confirm sheet
     final confirmed = await _showPaymentConfirmSheet();
     if (!confirmed || !mounted) return;
@@ -116,41 +82,60 @@ class _PaywallScreenState extends State<PaywallScreen>
 
     setState(() => _isPurchasing = false);
 
-    // Step 3 – Launch MyMobPay WebView checkout
-    final result = await Navigator.of(context).push<MyMobPayResult>(
-      MaterialPageRoute(
-        builder: (_) => MyMobPayWebViewScreen(
-          orderId: orderResponse.orderId!,
-          amount: orderResponse.orderAmount!,
-          apiKey: orderResponse.apiKey!,
-        ),
-        fullscreenDialog: true,
-      ),
-    );
-
-    if (!mounted) return;
-
-    if (result == null) return; // WebView closed without result
-
-    // Step 4 – Handle result
-    switch (result.status) {
-      case MyMobPayStatus.success:
-        final success = await subProvider.activatePlan(_selected);
+    if (kIsWeb) {
+      // ── Web Flow: Open in new tab and poll status ──
+      final paymentUrl = MyMobPayService.buildPaymentUrl(
+        orderId: orderResponse.orderId!,
+        amount: orderResponse.orderAmount!,
+        apiKey: orderResponse.apiKey!,
+        callbackUrl: 'https://gainiq-ten.vercel.app/api/mymobpay-callback',
+      );
+      final uri = Uri.parse(paymentUrl);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
         if (mounted) {
-          success
-              ? _showSuccessDialog(planLabel)
-              : _showError(
-                  'Payment received but activation failed. Contact support.');
+          _waitForWebPayment(orderResponse.orderId!, planLabel);
         }
-        break;
-      case MyMobPayStatus.failed:
-        _showError(result.message ?? 'Payment failed. Please try again.');
-        break;
-      case MyMobPayStatus.cancelled:
-        break; // User backed out — no action
-      case MyMobPayStatus.pending:
-        _showPendingSnackbar(result.orderId ?? '');
-        break;
+      } else {
+        _showError('Could not open payment window.');
+      }
+    } else {
+      // ── Mobile Flow: Launch Paytm/MyMobPay WebView checkout ──
+      final result = await Navigator.of(context).push<MyMobPayResult>(
+        MaterialPageRoute(
+          builder: (_) => MyMobPayWebViewScreen(
+            orderId: orderResponse.orderId!,
+            amount: orderResponse.orderAmount!,
+            apiKey: orderResponse.apiKey!,
+          ),
+          fullscreenDialog: true,
+        ),
+      );
+
+      if (!mounted) return;
+
+      if (result == null) return; // WebView closed without result
+
+      // Handle mobile result
+      switch (result.status) {
+        case MyMobPayStatus.success:
+          final success = await subProvider.activatePlan(_selected);
+          if (mounted) {
+            success
+                ? _showSuccessDialog(planLabel)
+                : _showError(
+                    'Payment received but activation failed. Contact support.');
+          }
+          break;
+        case MyMobPayStatus.failed:
+          _showError(result.message ?? 'Payment failed. Please try again.');
+          break;
+        case MyMobPayStatus.cancelled:
+          break; // User backed out — no action
+        case MyMobPayStatus.pending:
+          _showPendingSnackbar(result.orderId ?? '');
+          break;
+      }
     }
   }
 
@@ -775,6 +760,27 @@ class _PaywallScreenState extends State<PaywallScreen>
           Text(text, style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 13)),
         ],
       );
+
+  Future<void> _waitForWebPayment(String orderId, String planLabel) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return _WebPaymentPendingDialog(
+          orderId: orderId,
+          plan: _selected,
+          planLabel: planLabel,
+          onSuccess: () {
+            Navigator.of(dialogContext).pop();
+            _showSuccessDialog(planLabel);
+          },
+          onCancel: () {
+            Navigator.of(dialogContext).pop();
+          },
+        );
+      },
+    );
+  }
 }
 
 // ── Plan Card ────────────────────────────────────────────────
@@ -938,6 +944,114 @@ class _PlanCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _WebPaymentPendingDialog extends StatefulWidget {
+  final String orderId;
+  final SubscriptionPlan plan;
+  final String planLabel;
+  final VoidCallback onSuccess;
+  final VoidCallback onCancel;
+
+  const _WebPaymentPendingDialog({
+    required this.orderId,
+    required this.plan,
+    required this.planLabel,
+    required this.onSuccess,
+    required this.onCancel,
+  });
+
+  @override
+  State<_WebPaymentPendingDialog> createState() => _WebPaymentPendingDialogState();
+}
+
+class _WebPaymentPendingDialogState extends State<_WebPaymentPendingDialog> {
+  Timer? _pollingTimer;
+  bool _isChecking = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Poll order status every 3 seconds to detect payment completion on Web
+    _pollingTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      _checkStatus();
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _checkStatus() async {
+    if (_isChecking) return;
+    _isChecking = true;
+
+    try {
+      final status = await MyMobPayService.getOrderStatus(widget.orderId);
+      if (!mounted) return;
+
+      if (status == 'verified') {
+        _pollingTimer?.cancel();
+        // Activate subscription on the client-side immediately
+        final subProvider = Provider.of<SubscriptionProvider>(context, listen: false);
+        await subProvider.activatePlan(widget.plan);
+        widget.onSuccess();
+      } else if (status == 'expired' || status == 'rejected') {
+        _pollingTimer?.cancel();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Payment status: $status'), backgroundColor: Colors.redAccent),
+        );
+        widget.onCancel();
+      }
+    } catch (e) {
+      debugPrint('Web status check error: $e');
+    } finally {
+      _isChecking = false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: Theme.of(context).cardColor,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: const Row(
+        children: [
+          Text('💳 ', style: TextStyle(fontSize: 22)),
+          Text(
+            'Payment Pending',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          ),
+        ],
+      ),
+      content: const Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CircularProgressIndicator(color: Color(0xFFE5FF00)),
+          SizedBox(height: 20),
+          Text(
+            'We opened the payment screen in a new browser tab.\n\nPlease complete the payment there. Once paid, your subscription will activate automatically.',
+            style: TextStyle(fontSize: 14, height: 1.5),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: widget.onCancel,
+          child: Text(
+            'Cancel Payment',
+            style: TextStyle(
+              color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
