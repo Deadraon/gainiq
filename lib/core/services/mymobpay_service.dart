@@ -73,13 +73,6 @@ class MyMobPayService {
     String? customerPhone,
     String? customerName,
   }) async {
-    if (!isSupported) {
-      return const MyMobPayOrderResponse(
-        success: false,
-        errorMessage: 'MyMobPay payments are only supported on Android & iOS devices.',
-      );
-    }
-
     try {
       debugPrint('MYMOBPAY: Calling Vercel backend to initialize order...');
 
