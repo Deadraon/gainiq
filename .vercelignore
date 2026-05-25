@@ -1,0 +1,22 @@
+# Ignore all mobile app directories and build artifacts for Vercel backend
+android/
+ios/
+windows/
+macos/
+linux/
+build/
+.dart_tool/
+.git/
+.github/
+.idea/
+assets/
+lib/
+test/
+web/
+functions/
+*.log
+*.txt
+*.zip
+*.apk
+*.docx
+MYMOBPAY_INTEGRATION_GUIDE.docx
